@@ -1,0 +1,661 @@
+================================================================================
+DOKUMENTASI LENGKAP - SISTEM INVENTORY QR CODE
+Stack: Next.js (App Router) + Prisma ORM + PostgreSQL
+================================================================================
+Update: 2026-04-16
+================================================================================
+
+
+================================================================================
+BAGIAN 1 — LISTING FITUR LENGKAP
+================================================================================
+
+--------------------------------------------------------------------------------
+A. AUTENTIKASI & MANAJEMEN USER
+--------------------------------------------------------------------------------
+
+1.  Login dengan email & password
+2.  Logout & invalidasi session
+3.  Verifikasi email setelah registrasi (kirim link via Nodemailer)
+4.  OTP via email untuk 2FA / konfirmasi aksi sensitif
+5.  Lupa password — kirim reset link ke email
+6.  Reset password via token
+7.  Ganti password (dari dalam dashboard)
+8.  Upload & ganti avatar user
+9.  Edit profil (nama, nomor HP)
+10. Remember me / session persistent
+
+--------------------------------------------------------------------------------
+B. ROLE & PERMISSION (RBAC)
+--------------------------------------------------------------------------------
+
+11. Tiga role bawaan: Superadmin, Admin, Operator
+12. Manajemen role — tambah / edit / hapus role custom
+13. Toggle permission per role hingga level fitur/modul
+14. Middleware proteksi route berdasarkan role & permission
+15. Log aktivitas per user (siapa, aksi apa, kapan)
+
+--------------------------------------------------------------------------------
+C. MASTER DATA — KONFIGURASI
+--------------------------------------------------------------------------------
+
+16. CMS pengaturan website: nama situs, logo, deskripsi
+17. Manajemen kategori barang (habis-pakai, berulang-pakai, dll)
+18. Manajemen jenis barang (klasifikasi kustom)
+19. Manajemen satuan (Pcs, Box, Liter, Kg, Roll, dll)
+20. Manajemen gudang / lokasi penyimpanan (multi-gudang)
+21. Soft delete + restore + force delete untuk semua master data
+
+--------------------------------------------------------------------------------
+D. MANAJEMEN BARANG (MASTER BARANG)
+--------------------------------------------------------------------------------
+
+22. Tambah barang baru (nama, kode unik/SKU, harga, gambar)
+23. Edit detail barang
+24. Hapus barang (soft delete) + restore + force delete
+25. Upload foto barang (single image)
+26. Relasi barang ke: kategori, jenis, satuan, gudang
+27. Auto-generate kode barang (format kustom, misal: BRG-0001)
+28. Generate QR Code otomatis saat barang dibuat
+29. Tampil QR Code per barang di halaman detail
+30. Export QR Code ke gambar PNG/JPG (download)
+31. Export QR Code ke PDF — single item
+32. Export QR Code ke PDF — bulk (semua / per kategori)
+33. Label cetak QR Code (dengan nama barang, kode, gudang)
+34. Pencarian & filter barang (nama, kode, kategori, jenis, gudang)
+35. Pagination daftar barang
+
+--------------------------------------------------------------------------------
+E. MANAJEMEN STOK PER GUDANG
+--------------------------------------------------------------------------------
+
+36. Stok tersedia per barang per gudang
+37. Stok dipinjam per barang per gudang
+38. Stok dalam maintenance per barang per gudang
+39. Total stok gabungan semua gudang per barang
+40. Alert / warning jika stok tersedia di bawah minimum
+41. Tampilan stok detail pada halaman barang
+
+--------------------------------------------------------------------------------
+F. SISTEM TRANSAKSI
+--------------------------------------------------------------------------------
+
+F1. Barang Masuk
+42. Input barang masuk (restock / stok awal)
+43. Pilih barang via scan QR Code
+44. Pilih gudang tujuan
+45. Input jumlah & tanggal transaksi
+46. Catatan / keterangan transaksi
+47. Auto-generate kode transaksi unik (contoh: TRX-IN-20260416-0001)
+
+F2. Barang Keluar
+48. Input barang keluar (pemakaian / penggunaan)
+49. Pilih barang via scan QR Code
+50. Pilih gudang asal
+51. Input jumlah & tanggal
+52. Validasi stok tersedia sebelum proses
+
+F3. Peminjaman
+53. Input peminjaman barang
+54. Data peminjam (nama / user)
+55. Tanggal pinjam & tanggal kembali yang diharapkan
+56. Status peminjaman: aktif, terlambat, selesai
+57. Daftar barang sedang dipinjam
+58. Alert barang peminjaman melewati tanggal kembali
+
+F4. Pengembalian
+59. Input pengembalian barang dari peminjaman
+60. Pilih transaksi peminjaman aktif
+61. Kondisi barang saat kembali (baik / rusak)
+62. Otomatis update stok dipinjam → stok tersedia
+
+F5. Maintenance
+63. Input barang masuk maintenance (rusak / perbaikan)
+64. Pilih barang & gudang
+65. Catatan kerusakan
+66. Otomatis update stok tersedia → stok maintenance
+
+F6. Selesai Maintenance
+67. Input selesai maintenance
+68. Pilih transaksi maintenance aktif
+69. Catatan hasil perbaikan
+70. Otomatis update stok maintenance → stok tersedia
+
+--------------------------------------------------------------------------------
+G. QR CODE & SCANNING
+--------------------------------------------------------------------------------
+
+71. Scan QR Code via kamera HP (browser-based, tanpa app)
+72. Scan via barcode scanner USB/Bluetooth (input field)
+73. Halaman cek barang — scan QR → tampil info detail barang + stok
+74. Scan langsung dari form transaksi untuk pilih barang
+75. QR Code menyimpan kode unik barang (bukan URL, untuk keamanan)
+76. Validasi QR Code tidak dikenal / barang tidak aktif
+
+--------------------------------------------------------------------------------
+H. LAPORAN & EKSPOR
+--------------------------------------------------------------------------------
+
+77. Laporan transaksi — filter: tipe, periode, barang, gudang, user
+78. Laporan stok saat ini — semua gudang
+79. Laporan stok per gudang
+80. Laporan barang dipinjam (aktif & history)
+81. Laporan barang dalam maintenance
+82. Laporan mutasi barang (riwayat masuk-keluar per barang)
+83. Export laporan ke PDF
+84. Export laporan ke Excel (.xlsx)
+85. Dashboard ringkasan:
+    - Total barang aktif
+    - Total nilai stok
+    - Barang stok menipis
+    - Transaksi hari ini
+    - Barang sedang dipinjam
+    - Barang dalam maintenance
+
+--------------------------------------------------------------------------------
+I. NOTIFIKASI INTERNAL
+--------------------------------------------------------------------------------
+
+86. Notifikasi stok di bawah minimum
+87. Notifikasi peminjaman melewati tanggal kembali
+88. Notifikasi barang baru masuk
+89. Tandai notifikasi sudah dibaca
+90. Badge jumlah notifikasi belum dibaca di navbar
+
+--------------------------------------------------------------------------------
+J. PENGATURAN SISTEM
+--------------------------------------------------------------------------------
+
+91. Pengaturan umum: nama situs, logo, deskripsi
+92. Manajemen user — tambah / edit / nonaktifkan user
+93. Reset password user oleh Superadmin
+94. Audit log — riwayat aktivitas semua user
+95. Backup data — export seluruh data ke Excel/JSON (opsional)
+
+
+================================================================================
+BAGIAN 2 — SKEMA DATABASE (PRISMA SCHEMA)
+================================================================================
+
+Catatan:
+- ORM   : Prisma
+- DB    : PostgreSQL
+- Semua tabel menggunakan soft delete (deletedAt nullable)
+- Semua tabel punya createdAt & updatedAt otomatis
+
+--------------------------------------------------------------------------------
+
+// ============================================================
+// prisma/schema.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH & USER
+// ============================================================
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  emailVerifiedAt   DateTime?
+  password          String
+  phoneNumber       String?
+  avatar            String?
+  roleId            String
+  role              Role      @relation(fields: [roleId], references: [id])
+  rememberToken     String?
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  sessions          Session[]
+  passwordResets    PasswordResetToken[]
+  otpCodes          OtpCode[]
+  notifications     Notification[]
+  transactions      Transaction[]
+  activityLogs      ActivityLog[]
+  webSettings       WebSetting[]
+  barangs           Barang[]
+  gudangs           Gudang[]
+  jenisBarangs      JenisBarang[]
+  satuans           Satuan[]
+  barangCategories  BarangCategory[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id])
+  token        String    @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model OtpCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  code      String
+  type      OtpType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("otp_codes")
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  TWO_FACTOR
+  SENSITIVE_ACTION
+}
+
+// ============================================================
+// RBAC — ROLE & PERMISSION
+// ============================================================
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique   // superadmin, admin, operator
+  slug        String           @unique
+  description String?
+  deletedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique   // barang.create, transaksi.view, dst
+  slug        String           @unique
+  module      String                     // barang, transaksi, laporan, user, dst
+  description String?
+  createdAt   DateTime         @default(now())
+
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  isAllowed    Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, dst
+  module      String   // barang, transaksi, user, dst
+  description String?
+  metadata    Json?    // data tambahan (payload lama/baru)
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+// ============================================================
+// CMS SETTINGS
+// ============================================================
+
+model WebSetting {
+  id          String    @id @default(cuid())
+  webNama     String
+  webLogo     String?
+  webDeskripsi String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("web_settings")
+}
+
+// ============================================================
+// MASTER DATA INVENTARIS
+// ============================================================
+
+model BarangCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique   // habis-pakai, berulang-pakai
+  slug      String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  barangs   Barang[]
+
+  @@map("barang_categories")
+}
+
+model JenisBarang {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  barangs     Barang[]
+
+  @@map("jenis_barangs")
+}
+
+model Satuan {
+  id          String    @id @default(cuid())
+  name        String    @unique   // Pcs, Box, Liter, Kg, Roll
+  slug        String    @unique
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  barangs     Barang[]
+
+  @@map("satuans")
+}
+
+model Gudang {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  slug        String        @unique
+  description String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  barangGudangs     BarangGudang[]
+  transactionDetails TransactionDetail[]
+
+  @@map("gudangs")
+}
+
+// ============================================================
+// BARANG (MASTER ITEM)
+// ============================================================
+
+model Barang {
+  id               String         @id @default(cuid())
+  barangKode       String         @unique   // BRG-0001
+  barangNama       String         @unique
+  barangSlug       String         @unique
+  barangHarga      Decimal        @db.Decimal(15, 2)
+  barangGambar     String?
+  stokMinimum      Int            @default(0)
+  jenisBarangId    String
+  jenisBarang      JenisBarang    @relation(fields: [jenisBarangId], references: [id])
+  satuanId         String
+  satuan           Satuan         @relation(fields: [satuanId], references: [id])
+  barangCategoryId String
+  barangCategory   BarangCategory @relation(fields: [barangCategoryId], references: [id])
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  barangGudangs      BarangGudang[]
+  transactionDetails TransactionDetail[]
+
+  @@map("barangs")
+}
+
+// ============================================================
+// STOK PER GUDANG (PIVOT)
+// ============================================================
+
+model BarangGudang {
+  barangId         String
+  gudangId         String
+  barang           Barang   @relation(fields: [barangId], references: [id])
+  gudang           Gudang   @relation(fields: [gudangId], references: [id])
+  stokTersedia     Int      @default(0)
+  stokDipinjam     Int      @default(0)
+  stokMaintenance  Int      @default(0)
+  deletedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@id([barangId, gudangId])
+  @@map("barang_gudangs")
+}
+
+// ============================================================
+// TRANSAKSI
+// ============================================================
+
+model TransactionType {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  // BARANG_MASUK | BARANG_KELUAR | PEMINJAMAN |
+  // PENGEMBALIAN | MAINTENANCE | SELESAI_MAINTENANCE
+  slug         String        @unique
+  description  String?
+  deletedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  transactions Transaction[]
+
+  @@map("transaction_types")
+}
+
+model Transaction {
+  id                String          @id @default(cuid())
+  transactionCode   String          @unique   // TRX-IN-20260416-0001
+  transactionDate   DateTime
+  description       String?
+  status            TransactionStatus @default(ACTIVE)
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  transactionTypeId String
+  transactionType   TransactionType @relation(fields: [transactionTypeId], references: [id])
+  deletedAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  details           TransactionDetail[]
+
+  @@map("transactions")
+}
+
+enum TransactionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model TransactionDetail {
+  id            String       @id @default(cuid())
+  transactionId String
+  transaction   Transaction  @relation(fields: [transactionId], references: [id])
+  barangId      String
+  barang        Barang       @relation(fields: [barangId], references: [id])
+  gudangId      String
+  gudang        Gudang       @relation(fields: [gudangId], references: [id])
+  quantity      Int
+  tanggalKembali DateTime?   // untuk tipe PEMINJAMAN
+  kondisiKembali String?     // baik / rusak — untuk PENGEMBALIAN
+  catatan       String?
+  deletedAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map("transaction_details")
+}
+
+// ============================================================
+// NOTIFIKASI
+// ============================================================
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?     // metadata tambahan
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  STOK_MINIMUM
+  PEMINJAMAN_TERLAMBAT
+  BARANG_MASUK
+  MAINTENANCE
+  SYSTEM
+}
+
+
+================================================================================
+BAGIAN 3 — STRUKTUR FOLDER NEXT.JS (APP ROUTER)
+================================================================================
+
+src/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/
+│   │   ├── register/
+│   │   ├── forgot-password/
+│   │   ├── reset-password/
+│   │   └── verify-email/
+│   ├── (dashboard)/
+│   │   ├── layout.tsx              ← sidebar + navbar + auth guard
+│   │   ├── dashboard/              ← halaman utama + ringkasan
+│   │   ├── barang/
+│   │   │   ├── page.tsx            ← daftar barang
+│   │   │   ├── create/
+│   │   │   ├── [id]/
+│   │   │   │   ├── page.tsx        ← detail + QR code
+│   │   │   │   └── edit/
+│   │   │   └── qr-bulk/            ← cetak QR bulk
+│   │   ├── gudang/
+│   │   ├── kategori/
+│   │   ├── jenis/
+│   │   ├── satuan/
+│   │   ├── transaksi/
+│   │   │   ├── masuk/
+│   │   │   ├── keluar/
+│   │   │   ├── pinjam/
+│   │   │   ├── kembali/
+│   │   │   ├── maintenance/
+│   │   │   └── selesai-maintenance/
+│   │   ├── laporan/
+│   │   │   ├── transaksi/
+│   │   │   ├── stok/
+│   │   │   └── peminjaman/
+│   │   ├── scan/                   ← halaman cek barang via scan QR
+│   │   ├── notifikasi/
+│   │   ├── pengaturan/
+│   │   │   ├── website/
+│   │   │   ├── user/
+│   │   │   ├── role/
+│   │   │   └── permission/
+│   │   └── profil/
+│   └── api/
+│       ├── auth/
+│       ├── barang/
+│       ├── gudang/
+│       ├── transaksi/
+│       ├── laporan/
+│       ├── notifikasi/
+│       └── pengaturan/
+├── components/
+│   ├── ui/                         ← shadcn/ui components
+│   ├── qr/
+│   │   ├── QrGenerator.tsx
+│   │   ├── QrScanner.tsx
+│   │   └── QrPrintLabel.tsx
+│   ├── tables/
+│   ├── forms/
+│   └── layout/
+├── lib/
+│   ├── prisma.ts
+│   ├── auth.ts
+│   ├── permissions.ts
+│   └── utils.ts
+├── hooks/
+├── types/
+└── middleware.ts                   ← proteksi route berdasarkan role
+
+
+================================================================================
+BAGIAN 4 — STACK & DEPENDENCIES
+================================================================================
+
+Framework     : Next.js 14+ (App Router)
+Database      : PostgreSQL
+ORM           : Prisma
+Auth          : NextAuth.js v5 / iron-session / custom JWT
+UI            : shadcn/ui + Tailwind CSS
+QR Generate   : qrcode / react-qr-code
+QR Scan       : html5-qrcode (browser camera)
+PDF Export    : @react-pdf/renderer atau puppeteer (server-side)
+Excel Export  : exceljs atau xlsx
+Email         : Nodemailer + SMTP
+Validasi      : Zod
+File Upload   : uploadthing / multer / Cloudinary
+State         : Zustand / React Query (TanStack Query)
+Notif Toast   : sonner / react-hot-toast
+
+================================================================================
+END OF DOCUMENT
+================================================================================
