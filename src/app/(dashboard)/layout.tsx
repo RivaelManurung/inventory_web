@@ -2,7 +2,9 @@
 
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
+import NotificationWatcher from "@/components/layout/NotificationWatcher";
 import { useState } from "react";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function DashboardLayout({
   children,
@@ -10,9 +12,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { settings } = useSettings();
 
   return (
     <div className="flex h-screen w-full bg-background font-sans antialiased overflow-hidden">
+      <NotificationWatcher />
       {/* Sidebar - Desktop */}
       <div className="hidden lg:flex shrink-0">
         <Sidebar />
@@ -44,7 +48,7 @@ export default function DashboardLayout({
         {/* Footer */}
         <footer className="px-6 py-3 bg-card border-t border-border flex justify-between items-center shrink-0">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} DOTS Inventory System. v1.0.0
+            &copy; {new Date().getFullYear()} {settings?.webNama || "DOTS"} Inventory.
           </p>
           <span className="text-xs text-muted-foreground/60">Premium Enterprise Edition</span>
         </footer>

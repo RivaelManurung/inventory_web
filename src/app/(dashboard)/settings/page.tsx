@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import HeaderTitle from "@/components/layout/HeaderTitle";
 import ImageUpload from "@/components/forms/ImageUpload";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function SettingsPage() {
+  const { refreshSettings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -57,6 +59,7 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
+        await refreshSettings();
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {

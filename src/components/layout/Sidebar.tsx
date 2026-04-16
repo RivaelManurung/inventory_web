@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
+import { useSettings } from "@/context/SettingsContext";
 
 const menuItems = [
   {
@@ -59,6 +60,7 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { settings } = useSettings();
   const [openMenus, setOpenMenus] = useState<string[]>(["Transaksi Stok"]);
 
   const toggleMenu = (name: string) => {
@@ -71,12 +73,20 @@ export default function Sidebar() {
     <aside className="w-60 flex flex-col shrink-0 h-screen sticky top-0 bg-sidebar border-r border-sidebar-border overflow-hidden">
       {/* Brand Header */}
       <div className="h-14 flex items-center gap-3 px-5 border-b border-sidebar-border shrink-0">
-        <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center shrink-0">
-          <span className="text-white text-[10px] font-bold tracking-tight">CMS</span>
+        <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center shrink-0 overflow-hidden">
+          {settings?.webLogo ? (
+            <img src={settings.webLogo} alt={settings.webNama} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white text-[10px] font-bold tracking-tight">
+              {settings?.webNama?.substring(0, 3).toUpperCase() || "CMS"}
+            </span>
+          )}
         </div>
         <div className="min-w-0">
-          <p className="text-white text-sm font-bold leading-none">DOTS</p>
-          <p className="text-sidebar-foreground/60 text-[10px] leading-tight mt-0.5 truncate">
+          <p className="text-white text-sm font-bold leading-none truncate tracking-tight">
+            {settings?.webNama || "DOTS"}
+          </p>
+          <p className="text-sidebar-foreground/60 text-[10px] leading-tight mt-0.5 truncate uppercase tracking-widest font-medium">
             Inventory System
           </p>
         </div>

@@ -89,11 +89,13 @@ export async function POST(req: Request) {
           where: { barangId_gudangId: { barangId: item.barangId, gudangId: item.gudangId } }
         });
 
+        // Update stock
+        let updatedBG;
         if (!bg) {
           if (!isMasuk) {
             throw new Error('Stok tidak ditemukan untuk barang ID: ' + item.barangId);
           }
-          await tx.barangGudang.create({
+          updatedBG = await tx.barangGudang.create({
             data: { 
               barangId: item.barangId, 
               gudangId: item.gudangId, 
@@ -106,10 +108,24 @@ export async function POST(req: Request) {
             throw new Error('Stok barang tidak mencukupi untuk dikeluarkan. Diminta: ' + qty + ', Tersedia: ' + bg.stokTersedia);
           }
 
-          await tx.barangGudang.update({
+          updatedBG = await tx.barangGudang.update({
             where: { barangId_gudangId: { barangId: item.barangId, gudangId: item.gudangId } },
             data: {
               stokTersedia: isMasuk ? { increment: qty } : { decrement: qty }
+            }
+          });
+        }
+
+        // Check if stock is low after update
+        const barang = await tx.barang.findUnique({ where: { id: item.barangId } });
+        if (barang && updatedBG.stokTersedia <= barang.stokMinimum) {
+          await tx.notification.create({
+            data: {
+              userId: session.user.id,
+              type: "STOK_MINIMUM",
+              title: updatedBG.stokTersedia === 0 ? "Stok Habis!" : "Stok Menipis!",
+              message: `Barang ${barang.barangNama} sisa ${updatedBG.stokTersedia} unit di gudang.`,
+              data: { barangId: barang.id, currentStock: updatedBG.stokTersedia }
             }
           });
         }

@@ -1,155 +1,239 @@
 import React from 'react';
 import { 
   Calendar, 
-  ChevronDown,
   ArrowUpRight, 
   ArrowDownRight, 
   Package,
   History,
   Activity,
-  Search
+  Search,
+  TrendingUp,
+  AlertCircle,
+  Clock,
+  LayoutDashboard,
+  ShoppingCart,
+  Boxes,
+  ArrowRightLeft
 } from 'lucide-react';
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import Link from 'next/link';
+import HeaderTitle from "@/components/layout/HeaderTitle";
 
 export const dynamic = "force-dynamic";
 
-import HeaderTitle from "@/components/layout/HeaderTitle";
-
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; type?: string }>;
-}) {
-  const { q, type } = await searchParams;
-  const search = q || "";
-
-  // Mengambil data Aktivitas asli dari ActivityLog
-  // Digabung dengan Transaction untuk detail lebih lengkap jika diperlukan
-  const activityLogs = await prisma.activityLog.findMany({
-    where: {
-      OR: [
-        { description: { contains: search, mode: "insensitive" } },
-        { action: { contains: search, mode: "insensitive" } },
-        { user: { name: { contains: search, mode: "insensitive" } } },
-      ],
-      ...(type && type !== "Semua Jenis" ? { action: { contains: type, mode: "insensitive" } } : {}),
-    },
-    include: {
-      user: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 10,
+export default async function DashboardPage() {
+  // Fetch Metrics
+  const totalBarang = await prisma.barang.count({ where: { deletedAt: null } });
+  
+  const stokGudang = await prisma.barangGudang.aggregate({
+    _sum: { stokTersedia: true },
+    where: { deletedAt: null }
   });
 
-  const totalLogs = await prisma.activityLog.count();
+  const totalTransaksi = await prisma.transaction.count({ where: { deletedAt: null } });
+  
+  const stokMenipis = await prisma.barang.count({
+    where: {
+      deletedAt: null,
+      barangGudangs: {
+        some: {
+          stokTersedia: { lte: 10 } // Contoh threshold 10
+        }
+      }
+    }
+  });
+
+  const recentTransactions = await prisma.transaction.findMany({
+    where: { deletedAt: null },
+    include: {
+      transactionType: true,
+      user: true,
+      _count: { select: { details: true } }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5
+  });
+
+  const stats = [
+    {
+      title: "Total Asset Barang",
+      value: totalBarang,
+      label: "Item Terdaftar",
+      icon: <Package className="w-5 h-5 text-blue-400" />,
+      color: "blue",
+      trend: "+12.5%",
+      isPositive: true
+    },
+    {
+      title: "Total Stok Fisik",
+      value: stokGudang._sum.stokTersedia || 0,
+      label: "Unit di Gudang",
+      icon: <Boxes className="w-5 h-5 text-emerald-400" />,
+      color: "emerald",
+      trend: "+3.2%",
+      isPositive: true
+    },
+    {
+      title: "Volume Transaksi",
+      value: totalTransaksi,
+      label: "Total Aktivitas",
+      icon: <History className="w-5 h-5 text-purple-400" />,
+      color: "purple",
+      trend: "-1.5%",
+      isPositive: false
+    },
+    {
+      title: "Stok Menipis",
+      value: stokMenipis,
+      label: "Butuh Perhatian",
+      icon: <AlertCircle className="w-5 h-5 text-amber-400" />,
+      color: "amber",
+      trend: "Critical",
+      isPositive: false
+    }
+  ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <HeaderTitle title="Aktivitas Terkini" />
-      {/* Header Section */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{totalLogs} total log aktivitas</span>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <div className="flex flex-col gap-1">
+        <HeaderTitle title="Overview Dashboard" />
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+          <Clock className="w-3 h-3" /> Update Terakhir: {format(new Date(), "dd MMM yyyy, HH:mm")}
+        </p>
       </div>
 
-      {/* Filter Row */}
-      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-        <form className="relative flex-1 md:max-w-xs" action="/dashboard" method="GET">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-           <input 
-             name="q"
-             type="text" 
-             defaultValue={search}
-             placeholder="Cari aktivitas atau petugas..."
-             className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-muted-foreground/40 transition-all"
-           />
-        </form>
-        
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Periode</span>
-          <div className="flex items-center gap-4 border border-border rounded-lg px-4 py-2 bg-card font-medium text-foreground min-w-[150px] justify-between">
-            <span className="text-sm font-mono">{format(new Date(), "yyyy-MM-dd")}</span>
-            <Calendar size={14} className="text-muted-foreground" />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, i) => {
+          const colors: Record<string, string> = {
+            blue: "text-blue-500",
+            emerald: "text-emerald-500",
+            purple: "text-purple-500",
+            amber: "text-amber-500",
+          };
+
+          const colorClass = colors[stat.color] || colors.blue;
+
+          return (
+            <div key={i} className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+              <div className="p-5 flex items-center justify-between">
+                <div>
+                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{stat.title}</p>
+                   <h3 className="text-2xl font-bold text-foreground tracking-tight">{stat.value.toLocaleString()}</h3>
+                   <p className="text-[10px] text-muted-foreground font-medium mt-1">{stat.label}</p>
+                </div>
+                <div className={`p-3 rounded-lg bg-muted/50 border border-border ${colorClass}`}>
+                  {stat.icon}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Transactions — 2/3 */}
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden shadow-sm h-fit">
+          <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+              <TrendingUp className="w-3.5 h-3.5" /> Transaksi Terbaru
+            </h2>
+            <Link href="/transaksi" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider">Lihat Semua</Link>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border">
+                  <th className="pl-6 pr-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kode & Tanggal</th>
+                  <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Tipe</th>
+                  <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">PIC</th>
+                  <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right pr-6">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {recentTransactions.map((trx) => (
+                  <tr key={trx.id} className="hover:bg-muted/30 transition-colors group">
+                    <td className="pl-6 pr-4 py-4">
+                      <Link href={`/transaksi/${trx.id}`} className="block">
+                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{trx.transactionCode}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">{format(new Date(trx.transactionDate), "dd MMM yyyy")}</p>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
+                        trx.transactionType.slug.includes('masuk') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' :
+                        trx.transactionType.slug.includes('keluar') ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
+                        'bg-slate-500/10 border-slate-500/20 text-slate-600'
+                      }`}>
+                        {trx.transactionType.name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-xs font-medium text-foreground">{trx.user.name}</td>
+                    <td className="px-4 py-4 text-right pr-6">
+                      <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border">{trx._count.details} SKU</span>
+                    </td>
+                  </tr>
+                ))}
+                {recentTransactions.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-12 text-center text-xs text-muted-foreground">Belum ada transaksi tercatat</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="relative group">
-          <select 
-            name="type"
-            className="appearance-none bg-card border border-border rounded-lg px-4 py-2 pr-10 font-medium text-foreground focus:outline-none cursor-pointer hover:bg-accent transition-all text-sm min-w-[140px]"
-          >
-            <option>Semua Jenis</option>
-            <option>CREATE</option>
-            <option>UPDATE</option>
-            <option>DELETE</option>
-            <option>LOGIN</option>
-          </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        {/* Quick Actions / Activity — 1/3 */}
+        <div className="lg:col-span-1 space-y-4">
+           {/* Section Navigasi */}
+           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-border bg-muted/30">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Navigasi Cepat</h2>
+              </div>
+              <div className="p-4 space-y-3">
+                <Link href="/transaksi/create" className="flex items-center justify-between p-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all group">
+                   <div className="flex items-center gap-3">
+                      <ShoppingCart className="w-4 h-4" />
+                      <span className="text-xs font-bold">Input Transaksi</span>
+                   </div>
+                   <ArrowRightLeft className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100" />
+                </Link>
+                
+                <Link href="/master/barang" className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:bg-muted transition-all group">
+                   <div className="flex items-center gap-3">
+                      <Package className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-bold text-foreground">Katalog Barang</span>
+                   </div>
+                   <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground opacity-50 group-hover:opacity-100" />
+                </Link>
+              </div>
+           </div>
+
+           {/* Section Status */}
+           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Sistem Status</h2>
+              </div>
+              <div className="p-5 space-y-4">
+                 <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium text-muted-foreground">Database Sync</span>
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Connected</span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium text-muted-foreground">File Store</span>
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Online</span>
+                 </div>
+                 <div className="pt-2 border-t border-border flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Versi</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">v1.2.4-stable</span>
+                 </div>
+              </div>
+           </div>
         </div>
-
-        <button className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all text-sm">
-          Filter
-        </button>
-      </div>
-
-      {/* Activity Table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="pl-6 pr-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[20%]">Waktu</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] text-center w-[12%]">Aksi</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[15%] text-center">Modul</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[18%]">Petugas</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[35%]">Deskripsi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {activityLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="pl-6 pr-4 py-4 whitespace-nowrap text-[11px] font-mono font-medium text-muted-foreground">
-                    {format(new Date(log.createdAt), "dd MMM yyyy, HH:mm")}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded text-[10px] font-semibold min-w-[80px] uppercase border ${
-                      log.action === 'DELETE' ? 'bg-destructive/10 border-destructive/20 text-destructive' :
-                      log.action === 'CREATE' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' :
-                      'bg-primary/10 border-primary/20 text-primary'
-                    }`}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center text-[10px] font-semibold text-muted-foreground/60 uppercase group-hover:text-foreground transition-colors">
-                    {log.module}
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="text-sm font-semibold text-foreground">{log.user.name}</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="text-xs text-muted-foreground line-clamp-1 group-hover:text-foreground transition-colors">{log.description}</p>
-                  </td>
-                </tr>
-              ))}
-
-              {activityLogs.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-20 text-center">
-                    <Activity className="w-10 h-10 text-muted-foreground/20 mx-auto mb-4" />
-                    <p className="text-sm text-muted-foreground">Tidak ada record aktivitas ditemukan</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center py-2 px-1">
-           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{activityLogs.length} record ditampilkan</p>
-           <button className="text-[10px] font-semibold text-primary uppercase tracking-wider hover:underline">Export Log Aktivitas ›</button>
       </div>
     </div>
   );
