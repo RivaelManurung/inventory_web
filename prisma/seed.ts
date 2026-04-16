@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, TransactionStatus } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as bcrypt from "bcryptjs";
@@ -10,151 +10,224 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("Starting seeding...");
+  console.log("🚀 Menjalankan Seeder Kompleks...");
 
   // 1. Transaction Types
   const transactionTypes = [
-    { name: "Barang Masuk", slug: "barang-masuk", description: "Penerimaan barang baru atau restock" },
-    { name: "Barang Keluar", slug: "barang-keluar", description: "Pengeluaran barang untuk pemakaian" },
-    { name: "Peminjaman", slug: "peminjaman", description: "Peminjaman barang oleh user/staf" },
-    { name: "Pengembalian", slug: "pengembalian", description: "Pengembalian barang dari peminjaman" },
-    { name: "Maintenance", slug: "maintenance", description: "Barang masuk perbaikan" },
-    { name: "Selesai Maintenance", slug: "selesai-maintenance", description: "Barang selesai diperbaiki" },
+    { name: "Barang Masuk", slug: "barang-masuk", description: "Penerimaan barang baru atau restock ke gudang" },
+    { name: "Barang Keluar", slug: "barang-keluar", description: "Pengeluaran barang untuk pemakaian atau distribusi" },
+    { name: "Peminjaman", slug: "peminjaman", description: "Peminjaman aset oleh staf atau departemen" },
+    { name: "Pengembalian", slug: "pengembalian", description: "Pengembalian aset yang telah selesai dipinjam" },
+    { name: "Maintenance", slug: "maintenance", description: "Barang sedang dalam proses perbaikan/perawatan" },
+    { name: "Selesai Maintenance", slug: "selesai-maintenance", description: "Barang kembali ke gudang setelah perbaikan" },
   ];
 
   for (const type of transactionTypes) {
     await prisma.transactionType.upsert({
       where: { slug: type.slug },
-      update: {},
+      update: { description: type.description },
       create: type,
     });
   }
-  console.log("Transaction types seeded.");
 
   // 2. Roles
   const roles = [
-    { name: "Superadmin", slug: "superadmin", description: "Full system access" },
-    { name: "Admin", slug: "admin", description: "Administrator access" },
-    { name: "Operator", slug: "operator", description: "Daily operations access" },
+    { name: "Superadmin", slug: "superadmin", description: "Akses penuh ke seluruh sistem dan pengaturan" },
+    { name: "Admin", slug: "admin", description: "Akses manajemen data master dan transaksi" },
+    { name: "Operator", slug: "operator", description: "Akses operasional harian dan stok" },
   ];
 
   const dbRoles: any = {};
   for (const role of roles) {
     const createdRole = await prisma.role.upsert({
       where: { slug: role.slug },
-      update: {},
+      update: { description: role.description },
       create: role,
     });
     dbRoles[role.slug] = createdRole;
   }
-  console.log("Roles seeded.");
 
-  // 3. User
+  // 3. Main User
   const hashedPassword = await bcrypt.hash("admin123", 10);
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@example.com" },
-    update: {},
+    update: { password: hashedPassword },
     create: {
-      name: "Super Admin",
+      name: "Rivael Manurung",
       email: "admin@example.com",
       password: hashedPassword,
       roleId: dbRoles["superadmin"].id,
     },
   });
-  console.log("Admin user seeded.");
 
-  // 4. Master Data
-  const categories = [
-    { name: "Habis Pakai", slug: "habis-pakai", userId: adminUser.id },
-    { name: "Berulang Pakai", slug: "berulang-pakai", userId: adminUser.id },
+  // 4. Categories, Jenis, Satuans
+  const categoriesData = [
+    { name: "Consumable", slug: "habis-pakai" },
+    { name: "Fixed Asset", slug: "berulang-pakai" },
+    { name: "Safety Gear", slug: "safety-gear" },
+    { name: "Raw Material", slug: "bahan-baku" },
   ];
-
-  for (const cat of categories) {
-    await prisma.barangCategory.upsert({
+  const dbCats = [];
+  for (const cat of categoriesData) {
+    const c = await prisma.barangCategory.upsert({
       where: { slug: cat.slug },
       update: {},
-      create: cat,
+      create: { ...cat, userId: adminUser.id },
     });
+    dbCats.push(c);
   }
 
-  const jenis = [
-    { name: "Elektronik", slug: "elektronik", userId: adminUser.id },
-    { name: "Alat Tulis Kantor", slug: "atk", userId: adminUser.id },
-    { name: "Furniture", slug: "furniture", userId: adminUser.id },
+  const jenisData = [
+    { name: "Komponen Elektronik", slug: "elektronik", description: "Komponen berbasis sirkuit dan listrik" },
+    { name: "Furniture Kantor", slug: "furniture", description: "Meja, kursi, dan peralatan kantor" },
+    { name: "Alat Perlindungan Diri", slug: "apd", description: "Helm, sepatu safety, rompi" },
+    { name: "Hardware Server", slug: "server-hw", description: "Peralatan data center dan jaringan" },
+    { name: "Stationery", slug: "atk", description: "Kertas, pulpen, dan alat tulis" },
   ];
-
-  for (const j of jenis) {
-    await prisma.jenisBarang.upsert({
+  const dbJenis = [];
+  for (const j of jenisData) {
+    const c = await prisma.jenisBarang.upsert({
       where: { slug: j.slug },
       update: {},
-      create: j,
+      create: { ...j, userId: adminUser.id },
     });
+    dbJenis.push(c);
   }
 
-  const satuans = [
-    { name: "Pcs", slug: "pcs", userId: adminUser.id },
-    { name: "Box", slug: "box", userId: adminUser.id },
-    { name: "Unit", slug: "unit", userId: adminUser.id },
+  const satuansData = [
+    { name: "Pcs", slug: "pcs" },
+    { name: "Box (Isi 12)", slug: "box-12" },
+    { name: "Unit", slug: "unit" },
+    { name: "Roll", slug: "roll" },
+    { name: "Set", slug: "set" },
   ];
-
-  for (const s of satuans) {
-    await prisma.satuan.upsert({
+  const dbSatuans = [];
+  for (const s of satuansData) {
+    const c = await prisma.satuan.upsert({
       where: { slug: s.slug },
       update: {},
-      create: s,
+      create: { ...s, userId: adminUser.id },
     });
+    dbSatuans.push(c);
   }
 
-  const gudangs = [
-    { name: "Gudang Utama", slug: "gudang-utama", description: "Penyimpanan pusat", userId: adminUser.id },
-    { name: "Gudang Cabang", slug: "gudang-cabang", description: "Penyimpanan cabang 1", userId: adminUser.id },
+  const gudangsData = [
+    { name: "Gudang Utama Rungkut", slug: "gudang-utama", description: "Pusat distribusi utama wilayah Surabaya" },
+    { name: "Gudang Logistik Sidoarjo", slug: "gudang-sidoarjo", description: "Penyimpanan buffer dan transit" },
+    { name: "Gudang Workshop", slug: "gudang-workshop", description: "Penyimpanan bahan baku produksi" },
   ];
-
-  for (const g of gudangs) {
-    await prisma.gudang.upsert({
+  const dbGudangs = [];
+  for (const g of gudangsData) {
+    const c = await prisma.gudang.upsert({
       where: { slug: g.slug },
       update: {},
-      create: g,
+      create: { ...g, userId: adminUser.id },
     });
+    dbGudangs.push(c);
   }
-  console.log("Master data seeded.");
 
-  // 5. Permissions (Sample)
-  const permissions = [
-    { name: "Barang View", slug: "barang.view", module: "barang" },
-    { name: "Barang Create", slug: "barang.create", module: "barang" },
-    { name: "Barang Edit", slug: "barang.edit", module: "barang" },
-    { name: "Barang Delete", slug: "barang.delete", module: "barang" },
-    { name: "Transaksi View", slug: "transaksi.view", module: "transaksi" },
-    { name: "Transaksi Create", slug: "transaksi.create", module: "transaksi" },
+  // 5. Generate 100 BARANG (Realistic Data)
+  console.log("📦 Membuat 100 Data Barang...");
+  const productTemplates = [
+    { name: "Laptop Business", brand: "ThinkPad", cat: "berulang-pakai", jenis: "elektronik", sat: "unit", price: 15500000 },
+    { name: "Monitor UltraSharp", brand: "Dell", cat: "berulang-pakai", jenis: "elektronik", sat: "unit", price: 4200000 },
+    { name: "Keyboard Mechanical", brand: "Keychron", cat: "berulang-pakai", jenis: "elektronik", sat: "unit", price: 1200000 },
+    { name: "Switch Networking", brand: "Cisco", cat: "berulang-pakai", jenis: "server-hw", sat: "unit", price: 8500000 },
+    { name: "Server Rack 2U", brand: "HP Enterprise", cat: "berulang-pakai", jenis: "server-hw", sat: "unit", price: 45000000 },
+    { name: "Helm Safety Pro", brand: "Krisbow", cat: "habis-pakai", jenis: "apd", sat: "pcs", price: 150000 },
+    { name: "Sepatu Safety Steel Toe", brand: "Caterpillar", cat: "habis-pakai", jenis: "apd", sat: "pcs", price: 850000 },
+    { name: "Kabel UTP Cat6 305m", brand: "Belden", cat: "habis-pakai", jenis: "elektronik", sat: "roll", price: 2100000 },
+    { name: "Meja Kerja Ergonomis", brand: "Informa", cat: "berulang-pakai", jenis: "furniture", sat: "unit", price: 2850000 },
+    { name: "Kursi Manajer", brand: "IKEA", cat: "berulang-pakai", jenis: "furniture", sat: "unit", price: 1900000 },
+    { name: "Kertas A4 80gr", brand: "PaperOne", cat: "habis-pakai", jenis: "atk", sat: "box-12", price: 450000 },
+    { name: "SSD NVMe 1TB", brand: "Samsung", cat: "habis-pakai", jenis: "elektronik", sat: "pcs", price: 1850000 },
+    { name: "RAM DDR4 16GB", brand: "Corsair", cat: "habis-pakai", jenis: "elektronik", sat: "pcs", price: 950000 },
+    { name: "Mouse Wireless", brand: "Logitech", cat: "habis-pakai", jenis: "elektronik", sat: "pcs", price: 250000 },
+    { name: "Router WiFi 6", brand: "TP-Link", cat: "berulang-pakai", jenis: "elektronik", sat: "unit", price: 1100000 },
   ];
 
-  for (const p of permissions) {
-    const createdPerm = await prisma.permission.upsert({
-      where: { slug: p.slug },
-      update: {},
-      create: p,
-    });
+  for (let i = 1; i <= 100; i++) {
+    const template = productTemplates[i % productTemplates.length];
+    const category = dbCats.find(c => c.slug === template.cat);
+    const jenis = dbJenis.find(j => j.slug === template.jenis);
+    const satuan = dbSatuans.find(s => s.slug === template.sat);
+    
+    const uniqueName = `${template.brand} ${template.name} Series ${i}`;
+    const code = `BRG-${i.toString().padStart(4, '0')}`;
+    const slug = uniqueName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + `-${i}`;
 
-    // Assign to superadmin and admin
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: {
-          roleId: dbRoles["superadmin"].id,
-          permissionId: createdPerm.id,
-        },
-      },
+    const barang = await prisma.barang.upsert({
+      where: { barangKode: code },
       update: {},
       create: {
-        roleId: dbRoles["superadmin"].id,
-        permissionId: createdPerm.id,
-        isAllowed: true,
-      },
+        barangKode: code,
+        barangNama: uniqueName,
+        barangSlug: slug,
+        barangHarga: template.price + (Math.random() * 500000),
+        stokMinimum: 5 + Math.floor(Math.random() * 10),
+        barangCategoryId: category!.id,
+        jenisBarangId: jenis!.id,
+        satuanId: satuan!.id,
+        userId: adminUser.id,
+      }
+    });
+
+    // 6. Assign Inventory levels to warehouses
+    for (const gudang of dbGudangs) {
+       const initialStock = Math.floor(Math.random() * 50);
+       await prisma.barangGudang.upsert({
+         where: {
+           barangId_gudangId: {
+             barangId: barang.id,
+             gudangId: gudang.id
+           }
+         },
+         update: {},
+         create: {
+           barangId: barang.id,
+           gudangId: gudang.id,
+           stokTersedia: initialStock,
+           stokDipinjam: Math.floor(Math.random() * 5),
+           stokMaintenance: Math.floor(Math.random() * 2),
+         }
+       });
+    }
+  }
+
+  // 7. Generate some recent Transactions
+  console.log("📝 Mencatat Riwayat Transaksi...");
+  const trxTypeIn = await prisma.transactionType.findUnique({ where: { slug: "barang-masuk" } });
+  const trxTypeOut = await prisma.transactionType.findUnique({ where: { slug: "barang-keluar" } });
+  const allBarangs = await prisma.barang.findMany({ take: 20 });
+
+  for (let i = 1; i <= 20; i++) {
+    const isMasuk = i % 2 === 0;
+    const type = isMasuk ? trxTypeIn : trxTypeOut;
+    const itemsCount = 1 + Math.floor(Math.random() * 3);
+    const timestamp = Date.now().toString().slice(-6);
+    
+    // Use upsert or unique code to avoid P2002
+    await prisma.transaction.create({
+      data: {
+        transactionCode: `TRX-${isMasuk ? 'IN' : 'OUT'}-${new Date().getFullYear()}${(i + 100).toString()}-${timestamp}-${i}`,
+        transactionDate: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+        description: `Transaksi otomatis seeder nomor ${i}`,
+        status: TransactionStatus.COMPLETED,
+        userId: adminUser.id,
+        transactionTypeId: type!.id,
+        details: {
+          create: Array.from({ length: itemsCount }).map((_, idx) => ({
+            barangId: allBarangs[(i + idx) % allBarangs.length].id,
+            gudangId: dbGudangs[0].id,
+            quantity: 5 + Math.floor(Math.random() * 10),
+            catatan: "Catatan item transaksi"
+          }))
+        }
+      }
     });
   }
-  console.log("Permissions seeded.");
 
-  console.log("Seeding finished successfully!");
+  console.log("✅ Seeding Berhasil Diselesaikan!");
 }
 
 main()
@@ -164,4 +237,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    pool.end();
   });

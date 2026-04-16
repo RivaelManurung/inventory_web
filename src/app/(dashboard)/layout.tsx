@@ -12,43 +12,41 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="flex h-screen w-full bg-background font-sans antialiased overflow-hidden">
       {/* Sidebar - Desktop */}
-      <div className="hidden lg:block w-68 h-screen sticky top-0">
+      <div className="hidden lg:flex shrink-0">
         <Sidebar />
       </div>
 
       {/* Sidebar - Mobile Overlay */}
       {isSidebarOpen && (
         <>
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
-          ></div>
-          <div className="fixed inset-y-0 left-0 w-68 bg-white z-50 lg:hidden animate-in slide-in-from-left duration-300">
+          />
+          <div className="fixed inset-y-0 left-0 z-50 lg:hidden animate-in slide-in-from-left duration-300">
             <Sidebar />
           </div>
         </>
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
-        
-        <main className="flex-1 p-6 lg:p-8 shrink-0">
-          <div className="w-full h-full">
+
+        <main className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="mx-auto flex w-full flex-col gap-4">
             {children}
           </div>
         </main>
 
-        {/* Footer info (subtle) */}
-        <footer className="px-6 lg:px-8 py-4 bg-white border-t border-slate-100 flex justify-between items-center">
-            <p className="text-xs text-slate-400 font-medium tracking-wide">
-                &copy; {new Date().getFullYear()} DOTS INVENTORY SYSTEM. v1.0.0
-            </p>
-            <div className="flex gap-4">
-                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Premium Enterprise Edition</span>
-            </div>
+        {/* Footer */}
+        <footer className="px-6 py-3 bg-card border-t border-border flex justify-between items-center shrink-0">
+          <p className="text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} DOTS Inventory System. v1.0.0
+          </p>
+          <span className="text-xs text-muted-foreground/60">Premium Enterprise Edition</span>
         </footer>
       </div>
     </div>

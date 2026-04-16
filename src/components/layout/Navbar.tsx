@@ -1,96 +1,75 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { 
-  Bell, 
-  Search, 
-  User, 
-  LogOut, 
-  Settings,
-  Menu
-} from "lucide-react";
+import { Bell, LogOut, Settings, User, Menu } from "lucide-react";
 import { useState } from "react";
+import { useHeader } from "@/context/HeaderContext";
 
 export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { data: session } = useSession();
   const [showProfile, setShowProfile] = useState(false);
+  const { title } = useHeader();
 
   return (
-    <nav className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
-      {/* Left Wall */}
+    <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 shrink-0 sticky top-0 z-30">
+      {/* Left */}
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors"
+          className="lg:hidden p-2 hover:bg-accent rounded-md transition-colors"
         >
-          <Menu className="w-5 h-5 text-gray-500" />
+          <Menu className="w-4 h-4 text-muted-foreground" />
         </button>
-        <div className="hidden md:flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 group focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-          <Search className="w-4 h-4 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Cari barang atau transaksi..." 
-            className="bg-transparent border-none focus:outline-none text-sm w-64 placeholder:text-gray-400"
-          />
-        </div>
+        <h1 className="text-sm font-semibold text-foreground">{title || "Dashboard"}</h1>
       </div>
 
-      {/* Right Wall */}
+      {/* Right */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <button className="relative p-2 hover:bg-gray-50 rounded-full transition-colors group">
-          <Bell className="w-5 h-5 text-gray-500 group-hover:text-blue-600" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        <button className="relative p-2 hover:bg-accent rounded-md transition-colors group">
+          <Bell className="w-4 h-4 text-muted-foreground" />
+          <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-destructive rounded-full" />
         </button>
 
-        {/* Vertical Divider */}
-        <div className="w-px h-6 bg-gray-100 mx-2"></div>
-
-        {/* User Profile */}
+        {/* User */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => setShowProfile(!showProfile)}
-            className="flex items-center gap-3 pl-2 pr-1 py-1 hover:bg-gray-50 rounded-full transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-accent transition-colors cursor-pointer border border-transparent hover:border-border"
           >
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-gray-900 leading-none">
-                {session?.user?.name || "Premium User"}
-              </p>
-              <p className="text-xs text-gray-500 mt-1 capitalize">
-                {session?.user?.role || "Administrator"}
-              </p>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-blue-100">
-              {session?.user?.name?.charAt(0) || "U"}
+            <span className="text-xs font-medium text-muted-foreground">
+              {session?.user?.name ?? "—"}
+            </span>
+            <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-primary">
+                {session?.user?.name?.charAt(0)?.toUpperCase() ?? "?"}
+              </span>
             </div>
           </button>
 
-          {/* Profile Dropdown */}
           {showProfile && (
             <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowProfile(false)}
-              ></div>
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">User Sesi</p>
-                  <p className="text-sm font-semibold text-gray-800 truncate">{session?.user?.email}</p>
+              <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
+              <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-in fade-in duration-150">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-xs text-muted-foreground">User Aktif</p>
+                  <p className="text-sm font-medium text-foreground truncate mt-0.5">{session?.user?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
                 </div>
-                <div className="p-2">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-left uppercase font-medium tracking-wide">
-                    <User className="w-4 h-4" /> Profil Saya
+                <div className="p-1.5">
+                  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left">
+                    <User className="w-3.5 h-3.5 text-muted-foreground" /> Profil
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-left uppercase font-medium tracking-wide">
-                    <Settings className="w-4 h-4" /> Pengaturan Akun
+                  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left">
+                    <Settings className="w-3.5 h-3.5 text-muted-foreground" /> Pengaturan
                   </button>
                 </div>
-                <div className="p-2 border-t border-gray-50">
-                  <button 
+                <div className="p-1.5 border-t border-border">
+                  <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left uppercase font-medium tracking-wide"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors text-left"
                   >
-                    <LogOut className="w-4 h-4" /> Keluar Sistem
+                    <LogOut className="w-3.5 h-3.5" /> Keluar
                   </button>
                 </div>
               </div>
@@ -98,6 +77,6 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
           )}
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

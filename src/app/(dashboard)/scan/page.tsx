@@ -1,8 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ScanLine, Search, Loader2 } from "lucide-react";
+
+import HeaderTitle from "@/components/layout/HeaderTitle";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -53,7 +55,8 @@ export default function ScanPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh]">
-      <div className="w-full max-w-lg bg-white p-10 rounded-3xl shadow-xl border border-slate-100 text-center relative overflow-hidden">
+      <HeaderTitle title="Scan QR / SKU" />
+      <div className="w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-100 text-center relative overflow-hidden">
         {/* Decor */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
         
@@ -61,8 +64,8 @@ export default function ScanPage() {
           <ScanLine className="w-12 h-12" />
         </div>
         
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ketik / Scan QR Code</h1>
-        <p className="text-slate-500 mt-3 text-sm max-w-sm mx-auto leading-relaxed">
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ketik / Scan QR Code</h2>
+        <p className="text-slate-500 mt-3 text-sm mx-auto leading-relaxed">
           Gunakan scanner barcode fisik atau ketik manual SKU barang (contoh: <strong>BRG-0001</strong>) untuk melihat detail barang dan stok.
         </p>
 
@@ -72,7 +75,7 @@ export default function ScanPage() {
           </div>
         )}
 
-        <form onSubmit={handleScan} className="mt-8 relative max-w-sm mx-auto group">
+        <form onSubmit={handleScan} className="mt-8 relative mx-auto group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
           </div>

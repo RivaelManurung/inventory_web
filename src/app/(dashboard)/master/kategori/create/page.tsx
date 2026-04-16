@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, Save, Tags } from "lucide-react";
+import { ArrowLeft, Save, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import HeaderTitle from "@/components/layout/HeaderTitle";
+import { toast } from "sonner";
 
 export default function CreateKategoriPage() {
   const router = useRouter();
@@ -13,7 +15,6 @@ export default function CreateKategoriPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
     setLoading(true);
     try {
       const res = await fetch("/api/master/kategori", {
@@ -23,60 +24,97 @@ export default function CreateKategoriPage() {
       });
       const data = await res.json();
       if (data.success) {
+        toast.success("Kategori berhasil ditambahkan!");
         router.push("/master/kategori");
         router.refresh();
       } else {
-        alert("Gagal menambahkan kategori: " + data.message);
+        toast.error("Gagal: " + data.message);
       }
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan.");
+    } catch {
+      toast.error("Terjadi kesalahan koneksi.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 max-w-3xl">
-      <div className="flex items-center gap-4">
-        <Link href="/master/kategori" className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
+    <div className="space-y-4 animate-in fade-in duration-300">
+      <HeaderTitle title="Tambah Kategori" />
+
+      {/* Page Header */}
+      <div className="flex items-center gap-3">
+        <Link href="/master/kategori" className="p-2 bg-card border border-border text-muted-foreground rounded-md hover:bg-accent transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
-            <Tags className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Master Data</span>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Tambah Kategori</h1>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Master Data / Kategori</p>
+          <h1 className="text-lg font-semibold text-foreground">Tambah Kategori Baru</h1>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden p-8">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nama Kategori</label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Elektronik"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 text-sm placeholder:text-slate-400 transition-all font-medium"
-              required
-            />
-            <p className="text-xs text-slate-400 mt-2 font-medium">Slug akan di-generate otomatis dari nama kategori.</p>
+      {/* Full-width 2-col layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Form — 2/3 */}
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-muted/30">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Informasi Kategori</h2>
           </div>
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Nama Kategori <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Contoh: Elektronik"
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                required
+              />
+              <p className="text-xs text-muted-foreground">Slug akan di-generate otomatis dari nama kategori.</p>
+            </div>
 
-          <div className="pt-6 border-t border-slate-100 flex justify-end">
-            <button 
-              disabled={loading}
-              type="submit" 
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Menyimpan..." : <><Save className="w-4 h-4" /> Simpan Kategori</>}
-            </button>
+            <div className="pt-4 border-t border-border flex items-center justify-between">
+              <Link href="/master/kategori" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Batal</Link>
+              <button type="submit" disabled={loading}
+                className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50">
+                <Save className="w-4 h-4" />
+                {loading ? "Menyimpan..." : "Simpan Kategori"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Info Panel — 1/3 */}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+              <Info className="w-3.5 h-3.5 text-muted-foreground" />
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Panduan</h2>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Kategori digunakan untuk mengelompokkan barang berdasarkan jenis atau kegunaannya.
+              </p>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  Nama kategori wajib diisi dan harus unik
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  Slug otomatis dibuat dari nama kategori
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  Kategori dapat digunakan saat menambahkan barang baru
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

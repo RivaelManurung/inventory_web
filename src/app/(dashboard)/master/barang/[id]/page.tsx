@@ -1,31 +1,25 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { Box, ArrowLeft, QrCode, Tag, Package, Download } from "lucide-react";
+import { ArrowLeft, Edit2, Package, Tag } from "lucide-react";
 import Link from "next/link";
+import HeaderTitle from "@/components/layout/HeaderTitle";
 import DetailClient from "./DetailClient";
+import DeleteAction from "@/components/actions/DeleteAction";
 
 export const dynamic = "force-dynamic";
 
-export default async function DetailBarangPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function DetailBarangPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const data = await prisma.barang.findUnique({
-    where: { id: params.id, deletedAt: null },
+    where: { id, deletedAt: null },
     include: {
       jenisBarang: true,
       satuan: true,
       barangCategory: true,
-      barangGudangs: {
-        include: {
-          gudang: true,
-        },
-      },
+      barangGudangs: { include: { gudang: true } },
     },
   });
-
   if (!data) return notFound();
 
   const totalTersedia = data.barangGudangs.reduce((a, b) => a + b.stokTersedia, 0);
@@ -33,109 +27,111 @@ export default async function DetailBarangPage({
   const totalMaintenance = data.barangGudangs.reduce((a, b) => a + b.stokMaintenance, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 max-w-5xl">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link href="/master/barang" className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+    <div className="space-y-4 animate-in fade-in duration-300">
+      <HeaderTitle title={data.barangKode} />
+
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/master/barang" className="p-2 bg-card border border-border text-muted-foreground rounded-md hover:bg-accent transition-colors"><ArrowLeft className="w-4 h-4" /></Link>
           <div>
-            <div className="flex items-center gap-2 text-blue-600 mb-1">
-              <Box className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Detail Asset</span>
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">{data.barangKode}</h1>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Master Data / Barang</p>
+            <h1 className="text-lg font-semibold text-foreground">{data.barangNama}</h1>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <DeleteAction id={data.id} name={data.barangNama} module="barang" />
+          <Link href={`/master/barang/${data.id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all font-semibold">
+            <Edit2 className="w-3.5 h-3.5" /> Edit
+          </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Kolom Kiri: Info Barang */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden p-8">
-            <div className="flex items-start gap-6 border-b border-slate-100 pb-6 mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                {data.barangGambar ? (
-                  <img src={data.barangGambar} alt={data.barangNama} className="w-full h-full object-cover rounded-2xl" />
-                ) : (
-                  <Box className="w-8 h-8" />
-                )}
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">{data.barangNama}</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1">
-                    <Tag className="w-3 h-3" /> {data.barangCategory?.name}
-                  </span>
-                  <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                    {data.jenisBarang?.name}
-                  </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Info Utama */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/30">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Detail Barang</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start gap-4 pb-4 mb-4 border-b border-border">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-base font-semibold text-foreground">{data.barangNama}</h3>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
+                      <div className={`w-1.5 h-1.5 rounded-full ${data.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                      <span className={`text-[9px] font-bold uppercase ${data.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {data.isActive ? 'Aktif' : 'Non-aktif'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="px-2 py-0.5 bg-muted border border-border text-[10px] font-semibold text-muted-foreground rounded uppercase">
+                      <Tag className="inline w-2.5 h-2.5 mr-1" />{data.barangCategory?.name}
+                    </span>
+                    <span className="px-2 py-0.5 bg-muted border border-border text-[10px] font-semibold text-muted-foreground rounded uppercase">
+                      {data.jenisBarang?.name}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Harga Satuan</p>
-                <p className="text-sm font-bold text-slate-700">Rp {Number(data.barangHarga).toLocaleString("id-ID")}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Satuan Pengukuran</p>
-                <p className="text-sm font-bold text-slate-700">{data.satuan?.name}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stok Minimal</p>
-                <p className="text-sm font-bold text-rose-600">{data.stokMinimum} {data.satuan?.name}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Didaftarkan</p>
-                <p className="text-sm font-bold text-slate-700">{new Date(data.createdAt).toLocaleDateString("id-ID")}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">SKU</p>
+                  <p className="text-sm font-mono text-foreground">{data.barangKode}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Harga Satuan</p>
+                  <p className="text-sm font-semibold text-foreground">Rp {Number(data.barangHarga).toLocaleString("id-ID")}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Satuan</p>
+                  <p className="text-sm text-foreground">{data.satuan?.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Stok Minimum</p>
+                  <p className="text-sm font-semibold text-destructive">{data.stokMinimum} {data.satuan?.name}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Tabel Stok by Gudang */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider">
-                <Package className="w-4 h-4 text-blue-600" /> Distribusi Stok Gudang
-              </h3>
+          {/* Stok Table */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+              <Package className="w-3.5 h-3.5 text-muted-foreground" />
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Distribusi Stok Gudang</h2>
             </div>
-            
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Lokasi Gudang</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Tersedia</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">Dipinjam</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-rose-400 uppercase tracking-[0.2em]">Maintenance</th>
+                  <tr className="bg-muted/30 border-b border-border">
+                    <th className="pl-6 pr-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em]">Lokasi</th>
+                    <th className="px-4 py-3 text-[10px] font-semibold text-emerald-600 uppercase tracking-[0.2em]">Tersedia</th>
+                    <th className="px-4 py-3 text-[10px] font-semibold text-amber-500 uppercase tracking-[0.2em]">Dipinjam</th>
+                    <th className="px-4 py-3 text-[10px] font-semibold text-destructive uppercase tracking-[0.2em] pr-6">Maintenance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-border">
                   {data.barangGudangs.map((bg) => (
-                    <tr key={bg.gudangId} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 text-xs font-bold text-slate-700">{bg.gudang?.name}</td>
-                      <td className="px-6 py-4 text-sm font-black text-emerald-600">{bg.stokTersedia}</td>
-                      <td className="px-6 py-4 text-sm font-black text-amber-600">{bg.stokDipinjam}</td>
-                      <td className="px-6 py-4 text-sm font-black text-rose-600">{bg.stokMaintenance}</td>
+                    <tr key={bg.gudangId} className="hover:bg-muted/30 transition-colors">
+                      <td className="pl-6 pr-4 py-4 text-sm font-medium text-foreground">{bg.gudang?.name}</td>
+                      <td className="px-4 py-4 text-sm font-semibold text-emerald-600">{bg.stokTersedia}</td>
+                      <td className="px-4 py-4 text-sm font-semibold text-amber-500">{bg.stokDipinjam}</td>
+                      <td className="px-4 py-4 text-sm font-semibold text-destructive pr-6">{bg.stokMaintenance}</td>
                     </tr>
                   ))}
-                  {data.barangGudangs.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-50/30">
-                        Belum ada stok barang ini di gudang manapun
-                      </td>
+                  {data.barangGudangs.length > 0 && (
+                    <tr className="bg-muted/30 font-semibold">
+                      <td className="pl-6 pr-4 py-3 text-xs text-muted-foreground">Total</td>
+                      <td className="px-4 py-3 text-sm text-emerald-600">{totalTersedia}</td>
+                      <td className="px-4 py-3 text-sm text-amber-500">{totalDipinjam}</td>
+                      <td className="px-4 py-3 text-sm text-destructive pr-6">{totalMaintenance}</td>
                     </tr>
                   )}
-                  {data.barangGudangs.length > 0 && (
-                    <tr className="bg-slate-50 font-black">
-                      <td className="px-6 py-4 text-xs text-slate-700 uppercase tracking-widest text-right">TOTAL GABUNGAN :</td>
-                      <td className="px-6 py-4 text-sm text-emerald-600">{totalTersedia}</td>
-                      <td className="px-6 py-4 text-sm text-amber-600">{totalDipinjam}</td>
-                      <td className="px-6 py-4 text-sm text-rose-600">{totalMaintenance}</td>
-                    </tr>
+                  {data.barangGudangs.length === 0 && (
+                    <tr><td colSpan={4} className="h-20 text-center text-sm text-muted-foreground">Belum ada stok di gudang manapun.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -143,11 +139,10 @@ export default async function DetailBarangPage({
           </div>
         </div>
 
-        {/* Kolom Kanan: QR Code Generator */}
+        {/* QR Code Side */}
         <div className="lg:col-span-1">
-          <DetailClient data={data as any} />
+          <DetailClient data={JSON.parse(JSON.stringify(data))} />
         </div>
-
       </div>
     </div>
   );

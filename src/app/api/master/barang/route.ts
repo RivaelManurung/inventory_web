@@ -40,7 +40,9 @@ export async function POST(req: Request) {
       jenisBarangId,
       satuanId,
       barangCategoryId,
-      userId
+      userId,
+      barangGambar,
+      isActive
     } = body;
 
     // Generate Slug
@@ -75,11 +77,13 @@ export async function POST(req: Request) {
         barangKode,
         barangNama,
         barangSlug,
+        barangGambar,
         barangHarga: Number(barangHarga) || 0,
         stokMinimum: Number(stokMinimum) || 0,
         jenisBarangId,
         satuanId,
         barangCategoryId,
+        isActive: typeof isActive === "boolean" ? isActive : true,
         userId: userId || "clv0q1abc000008lc2j2x3j4k", // dummy default
       }
     });
