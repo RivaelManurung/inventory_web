@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { handlePrismaError } from "@/lib/error-handler";
+import { createLog } from "@/lib/activity-log";
 
 export async function GET(req: Request) {
   try {
@@ -86,6 +87,14 @@ export async function POST(req: Request) {
         userId: session.user.id,
       }
     });
+
+    // Logging
+    await createLog(
+      session.user.id,
+      "CREATE",
+      "BARANG",
+      `Menambahkan barang baru: ${barangNama} (${barangKode})`
+    );
 
     return NextResponse.json({ success: true, data: newData }, { status: 201 });
   } catch (error: any) {

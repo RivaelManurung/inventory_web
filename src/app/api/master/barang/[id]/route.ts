@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/error-handler";
+import { createLog } from "@/lib/activity-log";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,6 +56,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
+    const session = await auth();
+    if (session?.user?.id) {
+      await createLog(
+        session.user.id,
+        "UPDATE",
+        "BARANG",
+        `Memperbarui data barang: ${barangNama} (${updated.barangKode})`
+      );
+    }
+
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     return handlePrismaError(error, "PATCH BARANG");
@@ -67,6 +79,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       where: { id },
       data: { deletedAt: new Date() },
     });
+    const session = await auth();
+    if (session?.user?.id) {
+      await createLog(
+        session.user.id,
+        "DELETE",
+        "BARANG",
+        `Menghapus barang dengan ID: ${id}`
+      );
+    }
+
     return NextResponse.json({ success: true, message: "Barang berhasil dihapus" });
   } catch (error: any) {
     return handlePrismaError(error, "DELETE BARANG");

@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import { authConfig } from "./auth.config"
+import { createLog } from "./activity-log"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

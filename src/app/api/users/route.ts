@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePrismaError } from "@/lib/error-handler";
+import { auth } from "@/lib/auth";
+import { createLog } from "@/lib/activity-log";
 import bcrypt from "bcryptjs";
 
 export async function GET(req: Request) {
@@ -47,6 +49,16 @@ export async function POST(req: Request) {
         role: { connect: { id: roleId } }
       },
     });
+
+    const session = await auth();
+    if (session?.user?.id) {
+      await createLog(
+        session.user.id,
+        "CREATE",
+        "USERS",
+        `Menambahkan user baru: ${name} (${email})`
+      );
+    }
 
     return NextResponse.json({ success: true, data: newUser }, { status: 201 });
   } catch (error: any) {

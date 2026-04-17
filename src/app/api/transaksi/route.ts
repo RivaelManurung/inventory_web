@@ -135,6 +135,16 @@ export async function POST(req: Request) {
         }
       }
 
+      await tx.activityLog.create({
+        data: {
+          userId: session.user.id,
+          action: "CREATE",
+          module: "TRANSAKSI",
+          description: `Melakukan transaksi ${trxType.name}: ${code}`,
+          metadata: { transactionId: newTrx.id }
+        }
+      });
+
       return newTrx;
     });
 
