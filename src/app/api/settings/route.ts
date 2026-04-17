@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { createLog } from "@/lib/activity-log";
+import { handlePrismaError } from "@/lib/error-handler";
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     const { webNama, webDeskripsi, webLogo } = body;
 
@@ -18,24 +25,32 @@ export async function POST(req: Request) {
           webLogo,
         },
       });
+      await createLog(
+        session.user.id,
+        "UPDATE",
+        "SETTINGS",
+        `Memperbarui pengaturan sistem: ${webNama}`
+      );
       return NextResponse.json({ success: true, data: updated });
     } else {
-      // Create if doesn't exist. Need a user ID though. 
-      // Falling back to a dummy user if none exists in db for dev purpose.
-      const user = await prisma.user.findFirst();
-      if (!user) throw new Error("No user found to associate settings with.");
-
+      // Create if doesn't exist
       const created = await prisma.webSetting.create({
         data: {
           webNama,
           webDeskripsi,
           webLogo,
-          userId: user.id,
+          userId: session.user.id,
         },
       });
+      await createLog(
+        session.user.id,
+        "UPDATE",
+        "SETTINGS",
+        `Inisialisasi pengaturan sistem baru: ${webNama}`
+      );
       return NextResponse.json({ success: true, data: created });
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "UPDATE SETTINGS");
   }
 }

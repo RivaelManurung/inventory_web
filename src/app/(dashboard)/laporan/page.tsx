@@ -10,19 +10,38 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
+import { Box, PieChart as PieIcon, TrendingUp, DollarSign } from "lucide-react";
+
 export default function LaporanPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("stok"); // stok, transaksi, user
+  const [filter, setFilter] = useState("stok");
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    totalStock: 0,
+    totalValue: 0
+  });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // For now, let's just fetch all barang for stock report
       const res = await fetch("/api/master/barang?all=true");
       const resData = await res.json();
       if (resData.success) {
         setData(resData.data);
+        
+        // Calculate Stats
+        let totalItems = resData.data.length;
+        let totalStock = 0;
+        let totalValue = 0;
+
+        resData.data.forEach((item: any) => {
+          const itemStok = item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0);
+          totalStock += itemStok;
+          totalValue += (itemStok * item.barangHarga);
+        });
+
+        setStats({ totalItems, totalStock, totalValue });
       }
     } catch (error) {
        toast.error("Gagal mengambil data laporan");
@@ -83,6 +102,37 @@ export default function LaporanPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <HeaderTitle title="Pusat Laporan & Ekspor" />
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+           <div className="flex items-center gap-4">
+             <div className="p-3 rounded-lg bg-primary/10 text-primary"><Box className="w-5 h-5" /></div>
+             <div>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total SKU Barang</p>
+               <h3 className="text-xl font-bold text-foreground">{stats.totalItems}</h3>
+             </div>
+           </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+           <div className="flex items-center gap-4">
+             <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-500"><TrendingUp className="w-5 h-5" /></div>
+             <div>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Unit Terdaftar</p>
+               <h3 className="text-xl font-bold text-foreground">{stats.totalStock.toLocaleString()} Unit</h3>
+             </div>
+           </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+           <div className="flex items-center gap-4">
+             <div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500"><DollarSign className="w-5 h-5" /></div>
+             <div>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Nilai Aset Inventaris</p>
+               <h3 className="text-xl font-bold text-foreground">Rp {stats.totalValue.toLocaleString()}</h3>
+             </div>
+           </div>
+        </div>
+      </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -172,4 +222,3 @@ export default function LaporanPage() {
   );
 }
 
-import { Box } from "lucide-react";

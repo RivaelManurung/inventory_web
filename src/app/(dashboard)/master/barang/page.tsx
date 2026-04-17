@@ -4,6 +4,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/layout/PageHeader";
 
+import ImportBarangButton from "@/components/master/ImportBarangButton";
+
 export const dynamic = "force-dynamic";
 
 export default async function BarangPage({
@@ -78,9 +80,7 @@ export default async function BarangPage({
           <button className="h-9 px-3 bg-white border border-slate-200 text-slate-600 rounded-md text-sm font-medium hover:bg-slate-50 transition-all flex items-center gap-1.5 flex-none">
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <Link href="/master/barang/qr-bulk" className="h-9 px-3 bg-white border border-slate-200 text-slate-600 rounded-md text-sm font-medium hover:bg-slate-50 transition-all flex items-center gap-1.5 flex-none">
-            <QrCode className="w-4 h-4" /> Cetak QR
-          </Link>
+          <ImportBarangButton />
           <Link href="/master/barang/create" className="h-9 px-4 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm flex-none">
             <Plus className="w-4 h-4" /> Tambah Barang
           </Link>
