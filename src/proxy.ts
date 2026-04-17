@@ -1,23 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth-edge";
 
 export default auth((req) => {
   const isAuth = !!req.auth;
+  const { nextUrl } = req;
   const isAuthPage =
-    req.nextUrl.pathname.startsWith("/login") ||
-    req.nextUrl.pathname.startsWith("/register");
+    nextUrl.pathname.startsWith("/login") ||
+    nextUrl.pathname.startsWith("/register");
+
+  const isDashboardRoute = nextUrl.pathname === "/" || 
+                           nextUrl.pathname.startsWith("/dashboard") ||
+                           nextUrl.pathname.startsWith("/master") ||
+                           nextUrl.pathname.startsWith("/users") ||
+                           nextUrl.pathname.startsWith("/transaksi") ||
+                           nextUrl.pathname.startsWith("/settings") ||
+                           nextUrl.pathname.startsWith("/roles") ||
+                           nextUrl.pathname.startsWith("/laporan");
 
   if (isAuthPage) {
     if (isAuth) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
-    return null;
+    return NextResponse.next();
   }
 
-  if (!isAuth) {
-    let from = req.nextUrl.pathname;
-    if (req.nextUrl.search) {
-      from += req.nextUrl.search;
+  if (!isAuth && isDashboardRoute) {
+    let from = nextUrl.pathname;
+    if (nextUrl.search) {
+      from += nextUrl.search;
     }
 
     return NextResponse.redirect(
@@ -25,7 +35,7 @@ export default auth((req) => {
     );
   }
 
-  if (req.nextUrl.pathname === "/") {
+  if (nextUrl.pathname === "/" && isAuth) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 

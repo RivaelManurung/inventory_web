@@ -1,16 +1,17 @@
 "use client";
 
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Activity, 
-  Building2, 
-  Users, 
-  CreditCard, 
-  Settings, 
-  Upload, 
-  ChevronDown 
+import {
+  LayoutDashboard,
+  Briefcase,
+  Activity,
+  Building2,
+  Users,
+  CreditCard,
+  Settings,
+  Upload,
+  ChevronDown,
+  ShieldCheck
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,19 +28,24 @@ interface SidebarProps {
 }
 
 export const menuItems = [
-  { group: "UTAMA", items: [
-    { name: "Dasbor", icon: LayoutDashboard },
-    { name: "Kasus", icon: Briefcase },
-    { name: "Aktivitas", icon: Activity },
-  ]},
-  { group: "ADMINISTRASI", items: [
-    { name: "Cabang", icon: Building2 },
-    { name: "Pengguna", icon: Users },
-    { name: "Produk Kredit", icon: CreditCard },
-    { name: "Grup Kolektor", icon: Users },
-    { name: "Aturan Penagihan", icon: Settings },
-    { name: "Upload Snapshot", icon: Upload },
-  ]}
+  {
+    group: "UTAMA", items: [
+      { name: "Dashboard", icon: LayoutDashboard },
+      { name: "Kasus", icon: Briefcase },
+      { name: "Aktivitas", icon: Activity },
+    ]
+  },
+  {
+    group: "ADMINISTRASI", items: [
+      { name: "Cabang", icon: Building2 },
+      { name: "Pengguna", icon: Users },
+      { name: "Produk Kredit", icon: CreditCard },
+      { name: "Grup Kolektor", icon: Users },
+      { name: "Hak Akses", icon: ShieldCheck },
+      { name: "Aturan Penagihan", icon: Settings },
+      { name: "Upload Snapshot", icon: Upload },
+    ]
+  }
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen }: SidebarProps) {
@@ -47,8 +53,8 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setIsS
     <>
       {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden transition-all duration-300" 
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -94,8 +100,8 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setIsS
                     }}
                     className={cn(
                       "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-lg transition-all duration-200 group relative",
-                      activeTab === item.name 
-                        ? "bg-[#2d3748] text-white shadow-sm" 
+                      activeTab === item.name
+                        ? "bg-[#2d3748] text-white shadow-sm"
                         : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                     )}
                   >
@@ -113,7 +119,7 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setIsS
             </div>
           ))}
         </nav>
-        
+
         <div className="p-6 border-t border-white/5">
           <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center text-white font-bold">

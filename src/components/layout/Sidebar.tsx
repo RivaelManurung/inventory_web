@@ -17,6 +17,9 @@ import {
   ChevronDown,
   PlusSquare,
   MinusSquare,
+  ShieldCheck,
+  History,
+  RefreshCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
@@ -27,9 +30,9 @@ const menuItems = [
   {
     title: "Utama",
     items: [
-      { name: "Dasbor", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Master Barang", href: "/master/barang", icon: Box },
-      { name: "Lokasi Gudang", href: "/master/gudang", icon: Warehouse },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
+      { name: "Master Barang", href: "/master/barang", icon: Box, permission: "barang.view" },
+      { name: "Lokasi Gudang", href: "/master/gudang", icon: Warehouse, permission: "gudang.view" },
     ],
   },
   {
@@ -39,20 +42,25 @@ const menuItems = [
         name: "Transaksi Stok",
         href: "/transaksi",
         icon: ArrowLeftRight,
+        permission: "transaksi.view",
         subItems: [
           { name: "Transaksi Masuk", href: "/transaksi?type=masuk", icon: PlusSquare },
           { name: "Transaksi Keluar", href: "/transaksi?type=keluar", icon: MinusSquare },
+          { name: "Penyesuaian Stok", href: "/transaksi/adjustment", icon: RefreshCcw },
         ],
       },
-      { name: "Laporan Inventaris", href: "/laporan", icon: BarChart3 },
+      { name: "Laporan Inventaris", href: "/laporan", icon: BarChart3, permission: "transaksi.view" },
     ],
   },
   {
     title: "Administrasi",
     items: [
-      { name: "Kategori Barang", href: "/master/kategori", icon: Tags },
-      { name: "Manajemen User", href: "/users", icon: Users },
-      { name: "Pengaturan Sistem", href: "/settings", icon: Settings },
+      { name: "Kategori Barang", href: "/master/kategori", icon: Tags, permission: "barang.view" },
+      { name: "Manajemen User", href: "/users", icon: Users, permission: "users.view" },
+      { name: "Hak Akses", href: "/roles", icon: ShieldCheck, permission: "roles.view" },
+      { name: "Audit Trail", href: "/logs", icon: History, permission: "superadmin" },
+      { name: "Pusat Laporan", href: "/laporan", icon: BarChart3, permission: "transaksi.view" },
+      { name: "Pengaturan Sistem", href: "/settings", icon: Settings, permission: "settings.view" },
     ],
   },
 ];
@@ -62,6 +70,21 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const { settings } = useSettings();
   const [openMenus, setOpenMenus] = useState<string[]>(["Transaksi Stok"]);
+
+  const userPermissions = (session?.user as any)?.permissions || [];
+  const userRole = (session?.user as any)?.role || "";
+  const userRoleName = (session?.user as any)?.roleName || "";
+  const isSuperadmin = userRole === "superadmin";
+
+  const hasPermission = (permission?: string) => {
+    if (!permission || isSuperadmin) return true;
+    return userPermissions.includes(permission);
+  };
+
+  const filteredMenuItems = menuItems.map(group => ({
+    ...group,
+    items: group.items.filter(item => hasPermission(item.permission))
+  })).filter(group => group.items.length > 0);
 
   const toggleMenu = (name: string) => {
     setOpenMenus((prev) =>
@@ -83,10 +106,10 @@ export default function Sidebar() {
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-white text-sm font-bold leading-none truncate tracking-tight">
+          <p className="text-white text-base font-bold leading-none truncate tracking-tight">
             {settings?.webNama || "DOTS"}
           </p>
-          <p className="text-sidebar-foreground/60 text-[10px] leading-tight mt-0.5 truncate uppercase tracking-widest font-medium">
+          <p className="text-sidebar-foreground/60 text-xs leading-tight mt-1 truncate uppercase tracking-widest font-medium">
             Inventory System
           </p>
         </div>
@@ -94,19 +117,19 @@ export default function Sidebar() {
 
       {/* Branch context */}
       <div className="mx-3 mt-3 px-3 py-2 rounded-md bg-sidebar-accent/40 border border-sidebar-border">
-        <p className="text-[10px] text-sidebar-foreground/40 uppercase tracking-wide font-medium">
+        <p className="text-xs text-sidebar-foreground/40 uppercase tracking-wide font-medium">
           Kantor Pusat
         </p>
-        <p className="text-xs text-sidebar-foreground mt-0.5 truncate">
+        <p className="text-sm text-sidebar-foreground mt-0.5 truncate">
           {session?.user?.name ?? "—"}
         </p>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 custom-scrollbar">
-        {menuItems.map((group) => (
+        {filteredMenuItems.map((group) => (
           <div key={group.title} className="mb-6">
-            <p className="text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-wider px-3 mb-2">
+            <p className="text-xs font-semibold text-sidebar-foreground/40 uppercase tracking-wider px-3 mb-2">
               {group.title}
             </p>
             <ul className="space-y-0.5">
@@ -171,17 +194,17 @@ export default function Sidebar() {
                         {item.subItems?.map((sub) => {
                           const subActive = pathname === sub.href;
                           return (
-                            <li key={sub.name}>
+                             <li key={sub.name}>
                               <Link
                                 href={sub.href}
                                 className={cn(
-                                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors",
-                                  subActive
-                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                                    : "text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent/50"
+                                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
+                                   subActive
+                                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                     : "text-sidebar-foreground/60 hover:text-white hover:bg-sidebar-accent/50"
                                 )}
                               >
-                                <sub.icon className="w-3.5 h-3.5" />
+                                <sub.icon className="w-4 h-4" />
                                 {sub.name}
                               </Link>
                             </li>
@@ -206,19 +229,19 @@ export default function Sidebar() {
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate leading-none">
+            <p className="text-sm font-semibold text-white truncate leading-none">
               {session?.user?.name ?? "—"}
             </p>
-            <p className="text-[10px] text-sidebar-foreground/50 truncate mt-0.5">
-              Administrator
+            <p className="text-xs text-sidebar-foreground/50 truncate mt-1 uppercase tracking-wider">
+              {userRoleName || userRole || "User"}
             </p>
           </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/40 hover:text-red-400 hover:bg-sidebar-accent/40 transition-colors"
+          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 hover:text-red-400 hover:bg-sidebar-accent/40 transition-colors"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="w-4 h-4" />
           Keluar
         </button>
       </div>

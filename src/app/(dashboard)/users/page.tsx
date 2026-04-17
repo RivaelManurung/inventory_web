@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, MapPin, UserPlus, Filter, Mail, Phone, ArrowUpDown, Plus } from "lucide-react";
+import { Search, MapPin, UserPlus, Filter, Mail, Phone, ArrowUpDown, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/layout/PageHeader";
@@ -9,26 +9,43 @@ export const dynamic = "force-dynamic";
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string, page?: string }>;
 }) {
-  const { q } = await searchParams;
-  const search = q || "";
+  const params = await searchParams;
+  const search = params.q || "";
+  const currentPage = Number(params.page) || 1;
+  const pageSize = 20;
 
-  const users = await prisma.user.findMany({
-    where: {
-      deletedAt: null,
-      OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ],
-    },
-    include: {
-      role: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const [users, totalItems] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      },
+      include: {
+        role: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.user.count({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    })
+  ]);
+
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
@@ -41,27 +58,27 @@ export default async function UsersPage({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2 items-center">
           <form className="relative" action="/users" method="GET">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               name="q"
               type="text"
               defaultValue={search}
               placeholder="Cari nama atau email..."
-              className="h-8 w-64 pl-8 text-xs bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all placeholder:text-slate-400"
+              className="h-9 w-64 pl-9 text-sm bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all placeholder:text-slate-400"
             />
           </form>
-          {users.length > 0 && (
+          {totalItems > 0 && (
             <span className="text-xs text-slate-400 px-1 font-medium">
-              {users.length} personil terdaftar
+              {totalItems} personil terdaftar
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button className="h-8 px-3 bg-white border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 transition-all flex items-center gap-1.5 flex-none">
-            <Filter className="w-3.5 h-3.5" /> Filter
+          <button className="h-9 px-3 bg-white border border-slate-200 text-slate-600 rounded-md text-sm font-medium hover:bg-slate-50 transition-all flex items-center gap-1.5 flex-none">
+            <Filter className="w-4 h-4" /> Filter
           </button>
-          <Link href="/users/create" className="h-8 px-4 bg-primary text-primary-foreground rounded-md text-xs font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm flex-none">
-            <Plus className="w-3.5 h-3.5" /> Tambah User
+          <Link href="/users/create" className="h-9 px-4 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm flex-none">
+            <Plus className="w-4 h-4" /> Tambah User
           </Link>
         </div>
       </div>
@@ -72,14 +89,14 @@ export default async function UsersPage({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/30 border-b border-border">
-                <th className="pl-6 pr-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[35%]">
+                <th className="pl-6 pr-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[35%]">
                   <div className="flex items-center gap-1.5">
-                    User / Karyawan <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    User / Karyawan <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
                   </div>
                 </th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[20%] text-center">Jabatan / Role</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[30%]">Kontak & Akses</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] text-center w-[15%] pr-6">Status</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[20%] text-center">Jabatan / Role</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] w-[30%]">Kontak & Akses</th>
+                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] text-center w-[15%] pr-6">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -102,16 +119,16 @@ export default async function UsersPage({
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-3 text-xs font-normal text-muted-foreground">
+                      <div className="flex items-center gap-3 text-sm font-normal text-muted-foreground">
                         <span>{user.email || "—"}</span>
                         <span className="text-border">|</span>
-                        <span>{user.phone || "—"}</span>
+                        <span>{user.phoneNumber || "—"}</span>
                       </div>
                     </td>
                     <td className="px-4 py-4 text-center pr-6">
                       <div className="inline-flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-semibold text-emerald-600 uppercase">Aktif</span>
+                        <span className="text-xs font-semibold text-emerald-600 uppercase">Aktif</span>
                       </div>
                     </td>
                   </tr>
@@ -130,6 +147,44 @@ export default async function UsersPage({
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-muted-foreground">
+            Menampilkan <span className="font-semibold">{(currentPage - 1) * pageSize + 1}</span> sampai <span className="font-semibold">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold">{totalItems}</span> data
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href={`/users?q=${search}&page=${currentPage - 1}`}
+              className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Link>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={`/users?q=${search}&page=${p}`}
+                  className={`w-9 h-9 flex items-center justify-center rounded-md text-xs font-bold transition-all ${
+                    currentPage === p 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-card border border-border text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p}
+                </Link>
+              ))}
+            </div>
+            <Link
+              href={`/users?q=${search}&page=${currentPage + 1}`}
+              className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

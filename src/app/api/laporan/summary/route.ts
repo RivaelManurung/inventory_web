@@ -2,35 +2,32 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session) return new NextResponse('Unauthorized', { status: 401 });
 
-    const totalBarang = await prisma.barang.count({ where: { deletedAt: null } });
-    
-    // Total stock in Gudang
-    const gudangsData = await prisma.barangGudang.findMany({
-      include: { barang: true }
+    // 1. Total Model Barang
+    const totalBarangModel = await prisma.barang.count({
+      where: { deletedAt: null }
     });
 
-    let totalStokKeseluruhan = 0;
-    let totalNilaiInventaris = 0;
-
-    gudangsData.forEach(bg => {
-      totalStokKeseluruhan += bg.stokTersedia;
-      totalNilaiInventaris += (bg.stokTersedia * Number(bg.barang.barangHarga));
+    // 2. Total Stok Keseluruhan
+    const stokAggregation = await prisma.barangGudang.aggregate({
+      _sum: { stokTersedia: true },
+      where: { deletedAt: null }
     });
+    const totalStokKeseluruhan = stokAggregation._sum.stokTersedia || 0;
 
-    // Transaksi Bulan ini
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0,0,0,0);
+    // 3. Masuk & Keluar (Bulan Ini)
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const txBulanIni = await prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({
       where: {
-        transactionDate: { gte: startOfMonth },
-        deletedAt: null
+        transactionDate: { gte: firstDayOfMonth },
+        deletedAt: null,
+        status: 'COMPLETED'
       },
       include: {
         transactionType: true,
@@ -38,25 +35,33 @@ export async function GET(req: Request) {
       }
     });
 
-    let trMasuk = 0;
-    let trKeluar = 0;
+    let masuk = 0;
+    let keluar = 0;
 
-    txBulanIni.forEach(trx => {
-      const isMasuk = trx.transactionType.slug.includes('masuk') || trx.transactionType.slug.includes('peminjaman');
-      trx.details.forEach(d => {
-        if (isMasuk) trMasuk += d.quantity;
-        else trKeluar += d.quantity;
-      });
+    transactions.forEach(trx => {
+      const totalQty = trx.details.reduce((sum, d) => sum + d.quantity, 0);
+      if (trx.transactionType.slug.includes('masuk')) {
+        masuk += totalQty;
+      } else if (trx.transactionType.slug.includes('keluar')) {
+        keluar += totalQty;
+      }
     });
 
+    // 4. Total Nilai Inventaris
+    const allStok = await prisma.barangGudang.findMany({
+      where: { deletedAt: null },
+      include: { barang: true }
+    });
+
+    const totalNilaiInventaris = allStok.reduce((sum, item) => {
+      return sum + (item.stokTersedia * (item.barang.barangHarga || 0));
+    }, 0);
+
     return NextResponse.json({
-      totalBarangModel: totalBarang,
+      totalBarangModel,
       totalStokKeseluruhan,
-      totalNilaiInventaris,
-      pergerakanBulanIni: {
-        masuk: trMasuk,
-        keluar: trKeluar
-      }
+      pergerakanBulanIni: { masuk, keluar },
+      totalNilaiInventaris
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

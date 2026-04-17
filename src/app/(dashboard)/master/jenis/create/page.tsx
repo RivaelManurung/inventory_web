@@ -16,16 +16,17 @@ export default function CreateJenisPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     setLoading(true);
+    const toastId = toast.loading("Sedang menyimpan jenis barang...");
     try {
       const res = await fetch("/api/master/jenis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const data = await res.json();
       if (data.success) { 
-        toast.success("Jenis barang berhasil disimpan!");
+        toast.success("Jenis barang berhasil disimpan!", { id: toastId });
         router.push("/master/jenis"); 
         router.refresh(); 
       }
-      else toast.error("Gagal: " + data.message);
-    } catch { toast.error("Terjadi kesalahan koneksi."); }
+      else toast.error(data.message || "Gagal menyimpan data", { id: toastId });
+    } catch { toast.error("Terjadi kesalahan koneksi.", { id: toastId }); }
     finally { setLoading(false); }
   };
 

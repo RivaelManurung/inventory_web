@@ -16,6 +16,7 @@ export default function CreateGudangPage() {
     e.preventDefault();
     if (!form.name.trim() || !form.slug.trim()) { toast.error("Mohon lengkapi Nama dan Slug!"); return; }
     setLoading(true);
+    const toastId = toast.loading("Sedang mendaftarkan gudang...");
     try {
       const res = await fetch("/api/master/gudang", {
         method: "POST",
@@ -24,12 +25,12 @@ export default function CreateGudangPage() {
       });
       const data = await res.json();
       if (data.success) { 
-        toast.success("Gudang berhasil didaftarkan!");
+        toast.success("Gudang berhasil didaftarkan!", { id: toastId });
         router.push("/master/gudang"); 
         router.refresh(); 
       }
-      else toast.error("Gagal: " + data.message);
-    } catch { toast.error("Terjadi kesalahan koneksi."); }
+      else toast.error(data.message || "Gagal menyimpan data", { id: toastId });
+    } catch { toast.error("Terjadi kesalahan koneksi.", { id: toastId }); }
     finally { setLoading(false); }
   };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/error-handler";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,7 +9,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!data) return NextResponse.json({ success: false, message: "Gudang tidak ditemukan" }, { status: 404 });
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "GET GUDANG BY ID");
   }
 }
 
@@ -17,6 +18,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const { id } = await params;
     const body = await req.json();
     const { name, description } = body;
+    
+    if (!name) return NextResponse.json({ success: false, message: "Nama harus diisi" }, { status: 400 });
+    
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
     const updated = await prisma.gudang.update({
@@ -25,7 +29,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "PATCH GUDANG");
   }
 }
 
@@ -35,6 +39,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.gudang.update({ where: { id }, data: { deletedAt: new Date() } });
     return NextResponse.json({ success: true, message: "Gudang berhasil dihapus" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "DELETE GUDANG");
   }
 }

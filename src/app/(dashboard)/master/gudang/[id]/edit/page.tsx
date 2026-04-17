@@ -30,6 +30,7 @@ export default function EditGudangPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    const toastId = toast.loading("Sedang menyimpan perubahan...");
     try {
       const res = await fetch(`/api/master/gudang/${id}`, {
         method: "PATCH",
@@ -38,14 +39,14 @@ export default function EditGudangPage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        toast.success("Perubahan lokasi berhasil disimpan!");
+        toast.success("Perubahan lokasi berhasil disimpan!", { id: toastId });
         router.push(`/master/gudang/${id}`);
         router.refresh();
       } else {
-        toast.error(resData.message || "Gagal menyimpan perubahan");
+        toast.error(resData.message || "Gagal menyimpan perubahan", { id: toastId });
       }
     } catch (err) {
-      toast.error("Terjadi kesalahan koneksi.");
+      toast.error("Terjadi kesalahan koneksi.", { id: toastId });
     } finally {
       setSaving(false);
     }

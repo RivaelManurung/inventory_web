@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { handlePrismaError } from "@/lib/error-handler";
 
 export async function GET(req: Request) {
   try {
@@ -24,16 +26,21 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "GET KATEGORI");
   }
 }
 
 export async function POST(req: Request) {
   try {
-    // In real app, get user from session (NextAuth)
-    // const session = await auth();
+    const session = await auth();
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+    
     const body = await req.json();
-    const { name, userId } = body; // fallback userId for dev
+    const { name } = body;
+    
+    if (!name) return NextResponse.json({ success: false, message: "Nama kategori harus diisi" }, { status: 400 });
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
@@ -41,12 +48,12 @@ export async function POST(req: Request) {
       data: {
         name,
         slug,
-        userId: userId || "clv0q1abc000008lc2j2x3j4k" // Dummy User ID
+        userId: session.user.id
       }
     });
 
     return NextResponse.json({ success: true, data: newCategory }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "CREATE KATEGORI");
   }
 }

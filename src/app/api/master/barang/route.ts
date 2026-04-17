@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { handlePrismaError } from "@/lib/error-handler";
 
 export async function GET(req: Request) {
   try {
@@ -26,12 +28,17 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "GET BARANG");
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       barangNama,
@@ -40,22 +47,14 @@ export async function POST(req: Request) {
       jenisBarangId,
       satuanId,
       barangCategoryId,
-      userId,
       barangGambar,
       isActive
     } = body;
+    
+    if (!barangNama) return NextResponse.json({ success: false, message: "Nama barang harus diisi" }, { status: 400 });
 
     // Generate Slug
     const barangSlug = barangNama.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-
-    // Check if sluf or name already exists
-    const existing = await prisma.barang.findFirst({
-      where: { OR: [{ barangNama }, { barangSlug }] }
-    });
-
-    if (existing) {
-      return NextResponse.json({ success: false, message: "Nama barang sudah terdaftar!" }, { status: 400 });
-    }
 
     // Auto-generate barangKode: BRG-0001
     const latestBarang = await prisma.barang.findFirst({
@@ -84,12 +83,12 @@ export async function POST(req: Request) {
         satuanId,
         barangCategoryId,
         isActive: typeof isActive === "boolean" ? isActive : true,
-        userId: userId || "clv0q1abc000008lc2j2x3j4k", // dummy default
+        userId: session.user.id,
       }
     });
 
     return NextResponse.json({ success: true, data: newData }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "CREATE BARANG");
   }
-}
+}

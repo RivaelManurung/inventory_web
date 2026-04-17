@@ -5,7 +5,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "CMS DOTS - Inventory Management System",
+  title: "Inventory Management System",
   description: "Enterprise Inventory and Collection Management System",
 };
 

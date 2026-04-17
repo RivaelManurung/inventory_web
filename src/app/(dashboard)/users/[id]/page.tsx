@@ -13,11 +13,19 @@ export default async function DetailUserPage({ params }: { params: Promise<{ id:
   const user = await prisma.user.findUnique({
     where: { id, deletedAt: null },
     include: {
-      role: true,
+      role: {
+        include: {
+          permissions: {
+            include: { permission: true }
+          }
+        }
+      },
       activityLogs: { take: 10, orderBy: { createdAt: "desc" } },
     },
   });
   if (!user) return notFound();
+
+  const permissions = user.role?.permissions.filter(p => p.isAllowed) || [];
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
@@ -72,12 +80,30 @@ export default async function DetailUserPage({ params }: { params: Promise<{ id:
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-foreground">{user.phone || "—"}</span>
+                <span className="text-xs text-foreground">{user.phoneNumber || "—"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Bergabung {new Date(user.createdAt).toLocaleDateString("id-ID")}</span>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-muted-foreground" />
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Hak Akses</h2>
+            </div>
+            <div className="p-4 flex flex-wrap gap-1.5">
+              {permissions.length > 0 ? (
+                permissions.map((p) => (
+                  <span key={p.permission.id} className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted border border-border text-[9px] font-bold text-muted-foreground uppercase">
+                    {p.permission.name}
+                  </span>
+                ))
+              ) : (
+                <p className="text-[10px] text-muted-foreground italic">Tidak ada hak akses khusus.</p>
+              )}
             </div>
           </div>
         </div>

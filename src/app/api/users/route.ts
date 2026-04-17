@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { handlePrismaError } from "@/lib/error-handler";
 import bcrypt from "bcryptjs";
 
 export async function GET(req: Request) {
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data: users });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "GET USERS");
   }
 }
 
@@ -29,11 +30,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, email, password, phoneNumber, roleId, avatar } = body;
-
-    // Check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ success: false, message: "Email sudah terdaftar!" }, { status: 400 });
+    
+    if (!name || !email || !password) {
+      return NextResponse.json({ success: false, message: "Nama, email, dan password harus diisi" }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -44,13 +43,13 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         phoneNumber,
-        roleId,
         avatar,
+        role: { connect: { id: roleId } }
       },
     });
 
     return NextResponse.json({ success: true, data: newUser }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return handlePrismaError(error, "CREATE USER");
   }
 }

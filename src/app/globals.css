@@ -167,3 +167,24 @@
 
 .fade-in { animation-name: fade-in; }
 .slide-in-from-bottom-2 { animation-name: slide-in-from-bottom; }
+
+/* Sonner Toast Custom Styles */
+[data-sonner-toast][data-type='success'] {
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+  border: 1px solid #bcf1cc !important;
+}
+
+[data-sonner-toast][data-type='success'] [data-icon] {
+  color: #15803d !important;
+}
+
+[data-sonner-toast][data-type='error'] {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fee2e2 !important;
+}
+
+[data-sonner-toast][data-type='error'] [data-icon] {
+  color: #b91c1c !important;
+}

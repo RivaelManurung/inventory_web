@@ -30,6 +30,7 @@ export default function EditJenisPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    const toastId = toast.loading("Sedang menyimpan perubahan...");
     try {
       const res = await fetch(`/api/master/jenis/${id}`, {
         method: "PATCH",
@@ -38,14 +39,14 @@ export default function EditJenisPage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        toast.success("Perubahan jenis barang berhasil disimpan!");
+        toast.success("Perubahan jenis barang berhasil disimpan!", { id: toastId });
         router.push(`/master/jenis/${id}`);
         router.refresh();
       } else {
-        toast.error(resData.message || "Gagal menyimpan perubahan");
+        toast.error(resData.message || "Gagal menyimpan perubahan", { id: toastId });
       }
     } catch (err) {
-      toast.error("Terjadi kesalahan koneksi.");
+      toast.error("Terjadi kesalahan koneksi.", { id: toastId });
     } finally {
       setSaving(false);
     }

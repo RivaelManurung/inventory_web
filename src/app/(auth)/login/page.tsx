@@ -42,11 +42,11 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Logo & Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-200">
-            <LayoutGrid className="text-white w-7 h-7" />
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
+            <LayoutGrid className="text-primary-foreground w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">CMS DOTS</h1>
-          <p className="text-slate-500 text-sm mt-1">Inventory & Collection Management</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Inventory System</h1>
+          <p className="text-slate-500 text-sm mt-1">Sistem Manajemen Stok & Inventaris</p>
         </div>
 
         {/* Login Card */}
@@ -63,8 +63,8 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
-                  placeholder="nama@perusahaan.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
+                  placeholder="admin@inventory.com"
                 />
               </div>
             </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-semibold text-slate-700"> Kata Sandi </label>
-                <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                <a href="#" className="text-xs font-medium text-primary hover:underline transition-colors">
                   Lupa password?
                 </a>
               </div>
@@ -83,7 +83,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
                   placeholder="••••••••"
                 />
               </div>
@@ -99,7 +99,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-200/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
+              className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -112,7 +112,7 @@ export default function LoginPage() {
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-sm text-slate-500">
               Belum punya akun?{" "}
-              <a href="#" className="font-bold text-blue-600 hover:text-blue-700 transition-colors">
+              <a href="#" className="font-bold text-primary hover:underline transition-colors">
                 Hubungi Admin
               </a>
             </p>
@@ -120,8 +120,8 @@ export default function LoginPage() {
         </div>
 
         {/* Footer Info */}
-        <p className="mt-8 text-center text-xs text-slate-400 font-medium">
-          &copy; 2026 CMS DOTS v1.0.0 &bull; Secure Enterprise Systems
+        <p className="mt-8 text-center text-xs text-slate-400 font-medium tracking-wide">
+          &copy; 2026 INVENTORY SYSTEM v1.0.0 &bull; Professional Management
         </p>
       </div>
     </div>

@@ -8,9 +8,14 @@ import HeaderTitle from "@/components/layout/HeaderTitle";
 import ImageUpload from "@/components/forms/ImageUpload";
 import { toast } from "sonner";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { barangSchema } from "@/lib/validations";
+
 const inputCls = "w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
 const selectCls = "w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
 const labelCls = "text-xs font-semibold text-muted-foreground uppercase tracking-wide";
+const errorCls = "text-[10px] text-rose-500 font-bold mt-1 uppercase tracking-tight";
 
 export default function CreateBarangPage() {
   const router = useRouter();
@@ -19,16 +24,22 @@ export default function CreateBarangPage() {
   const [kategori, setKategori] = useState<any[]>([]);
   const [jenis, setJenis] = useState<any[]>([]);
   const [satuan, setSatuan] = useState<any[]>([]);
-  const [form, setForm] = useState({ 
-    barangNama: "", 
-    barangHarga: "", 
-    stokMinimum: "0", 
-    barangCategoryId: "", 
-    jenisBarangId: "", 
-    satuanId: "",
-    barangGambar: "",
-    isActive: true
+  
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(barangSchema),
+    defaultValues: {
+      barangNama: "",
+      barangHarga: 0,
+      stokMinimum: 0,
+      barangCategoryId: "",
+      jenisBarangId: "",
+      satuanId: "",
+      barangGambar: "",
+      isActive: true,
+    }
   });
+
+  const isActive = watch("isActive", true as any);
 
   useEffect(() => {
     Promise.all([
@@ -42,22 +53,23 @@ export default function CreateBarangPage() {
     }).finally(() => setFetching(false));
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.barangNama.trim() || !form.barangCategoryId || !form.jenisBarangId || !form.satuanId) {
-      toast.error("Mohon lengkapi semua field yang wajib!"); return;
-    }
+  const onFormSubmit = async (data: any) => {
     setLoading(true);
+    const toastId = toast.loading("Sedang menambahkan barang baru...");
     try {
-      const res = await fetch("/api/master/barang", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      const data = await res.json();
-      if (data.success) { 
-        toast.success("Barang berhasil ditambahkan!");
-        router.push(`/master/barang/${data.data.id}`); 
+      const res = await fetch("/api/master/barang", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(data) 
+      });
+      const resData = await res.json();
+      if (resData.success) { 
+        toast.success("Barang berhasil ditambahkan!", { id: toastId });
+        router.push(`/master/barang/${resData.data.id}`); 
         router.refresh(); 
       }
-      else toast.error("Gagal: " + data.message);
-    } catch { toast.error("Terjadi kesalahan koneksi."); }
+      else toast.error(resData.message || "Gagal menyimpan data", { id: toastId });
+    } catch { toast.error("Terjadi kesalahan koneksi.", { id: toastId }); }
     finally { setLoading(false); }
   };
 
@@ -85,48 +97,54 @@ export default function CreateBarangPage() {
             <div className="px-6 py-4 border-b border-border bg-muted/30">
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Informasi Dasar</h2>
             </div>
-            <form onSubmit={handleSubmit} id="barang-form" className="p-6 space-y-5">
+            <form onSubmit={handleSubmit(onFormSubmit)} id="barang-form" className="p-6 space-y-5">
               <div className="space-y-1.5">
                 <label className={labelCls}>Nama Barang <span className="text-destructive">*</span></label>
-                <input type="text" value={form.barangNama} onChange={(e) => setForm({ ...form, barangNama: e.target.value })}
-                  placeholder="Contoh: Laptop Dell XPS 13" className={inputCls} required />
+                <input type="text" {...register("barangNama")}
+                  placeholder="Contoh: Laptop Dell XPS 13" className={inputCls} />
+                {errors.barangNama && <p className={errorCls}>{errors.barangNama.message as string}</p>}
                 <p className="text-xs text-muted-foreground">SKU dan QR Code akan digenerate otomatis.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className={labelCls}>Kategori <span className="text-destructive">*</span></label>
-                  <select value={form.barangCategoryId} onChange={(e) => setForm({ ...form, barangCategoryId: e.target.value })} className={selectCls} required>
+                  <select {...register("barangCategoryId")} className={selectCls}>
                     <option value="">-- Pilih Kategori --</option>
                     {kategori.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
                   </select>
+                  {errors.barangCategoryId && <p className={errorCls}>{errors.barangCategoryId.message as string}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelCls}>Jenis Barang <span className="text-destructive">*</span></label>
-                  <select value={form.jenisBarangId} onChange={(e) => setForm({ ...form, jenisBarangId: e.target.value })} className={selectCls} required>
+                  <select {...register("jenisBarangId")} className={selectCls}>
                     <option value="">-- Pilih Jenis --</option>
                     {jenis.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
                   </select>
+                  {errors.jenisBarangId && <p className={errorCls}>{errors.jenisBarangId.message as string}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelCls}>Satuan <span className="text-destructive">*</span></label>
-                  <select value={form.satuanId} onChange={(e) => setForm({ ...form, satuanId: e.target.value })} className={selectCls} required>
+                  <select {...register("satuanId")} className={selectCls}>
                     <option value="">-- Pilih Satuan --</option>
                     {satuan.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                  {errors.satuanId && <p className={errorCls}>{errors.satuanId.message as string}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className={labelCls}>Harga / Nilai Barang (Rp)</label>
-                  <input type="number" min="0" value={form.barangHarga} onChange={(e) => setForm({ ...form, barangHarga: e.target.value })}
+                  <input type="number" step="0.01" {...register("barangHarga", { valueAsNumber: true })}
                     placeholder="Contoh: 15000000" className={inputCls} />
+                  {errors.barangHarga && <p className={errorCls}>{errors.barangHarga.message as string}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelCls}>Stok Minimum (Alert)</label>
-                  <input type="number" min="0" value={form.stokMinimum} onChange={(e) => setForm({ ...form, stokMinimum: e.target.value })}
+                  <input type="number" {...register("stokMinimum", { valueAsNumber: true })}
                     className={inputCls} />
+                  {errors.stokMinimum && <p className={errorCls}>{errors.stokMinimum.message as string}</p>}
                   <p className="text-xs text-muted-foreground">Sistem akan memberi peringatan jika stok di bawah nilai ini.</p>
                 </div>
               </div>
@@ -136,13 +154,13 @@ export default function CreateBarangPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, isActive: !form.isActive })}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${form.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    onClick={() => setValue("isActive", !isActive as any)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
                   >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${form.isActive ? 'translate-x-5' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
-                  <span className={`text-[11px] font-bold uppercase tracking-wider ${form.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    {form.isActive ? 'Aktif' : 'Non-aktif'}
+                  <span className={`text-[11px] font-bold uppercase tracking-wider ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {isActive ? 'Aktif' : 'Non-aktif'}
                   </span>
                 </div>
               </div>
@@ -182,8 +200,8 @@ export default function CreateBarangPage() {
             </div>
             <div className="p-4">
               <ImageUpload
-                value={form.barangGambar}
-                onChange={(url) => setForm({ ...form, barangGambar: url })}
+                value={watch("barangGambar")}
+                onChange={(url) => setValue("barangGambar", url)}
               />
             </div>
           </div>

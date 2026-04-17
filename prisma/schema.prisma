@@ -7,64 +7,59 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================================
-// AUTH & USER
-// ============================================================
-
 model User {
-  id                String    @id @default(cuid())
-  name              String
-  email             String    @unique
-  emailVerifiedAt   DateTime?
-  password          String
-  phoneNumber       String?
-  avatar            String?
-  roleId            String
-  role              Role      @relation(fields: [roleId], references: [id])
-  rememberToken     String?
-  deletedAt         DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  // Relations
-  sessions          Session[]
-  passwordResets    PasswordResetToken[]
-  otpCodes          OtpCode[]
-  notifications     Notification[]
-  transactions      Transaction[]
-  activityLogs      ActivityLog[]
-  webSettings       WebSetting[]
-  barangs           Barang[]
-  gudangs           Gudang[]
-  jenisBarangs      JenisBarang[]
-  satuans           Satuan[]
-  barangCategories  BarangCategory[]
+  id               String               @id @default(cuid())
+  name             String
+  email            String               @unique
+  username         String?              @unique
+  emailVerifiedAt  DateTime?
+  password         String
+  phoneNumber      String?
+  avatar           String?
+  roleId           String
+  rememberToken    String?
+  deletedAt        DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  activityLogs     ActivityLog[]
+  barangCategories BarangCategory[]
+  barangs          Barang[]
+  gudangs          Gudang[]
+  jenisBarangs     JenisBarang[]
+  notifications    Notification[]
+  otpCodes         OtpCode[]
+  passwordResets   PasswordResetToken[]
+  satuans          Satuan[]
+  sessions         Session[]
+  transactions     Transaction[]
+  role             Role                 @relation(fields: [roleId], references: [id])
+  webSettings      WebSetting[]
 
   @@map("users")
 }
 
 model Session {
-  id           String    @id @default(cuid())
-  userId       String?
-  user         User?     @relation(fields: [userId], references: [id])
-  token        String    @unique
-  ipAddress    String?
-  userAgent    String?
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@map("sessions")
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   email     String
-  token     String   @unique
+  token     String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
 
   @@map("password_reset_tokens")
 }
@@ -72,49 +67,37 @@ model PasswordResetToken {
 model OtpCode {
   id        String    @id @default(cuid())
   userId    String
-  user      User      @relation(fields: [userId], references: [id])
   code      String
   type      OtpType
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
 
   @@map("otp_codes")
 }
 
-enum OtpType {
-  EMAIL_VERIFICATION
-  TWO_FACTOR
-  SENSITIVE_ACTION
-}
-
-// ============================================================
-// RBAC — ROLE & PERMISSION
-// ============================================================
-
 model Role {
   id          String           @id @default(cuid())
-  name        String           @unique   // superadmin, admin, operator
+  name        String           @unique
   slug        String           @unique
   description String?
   deletedAt   DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-
-  users       User[]
   permissions RolePermission[]
+  users       User[]
 
   @@map("roles")
 }
 
 model Permission {
   id          String           @id @default(cuid())
-  name        String           @unique   // barang.create, transaksi.view, dst
+  name        String           @unique
   slug        String           @unique
-  module      String                     // barang, transaksi, laporan, user, dst
+  module      String
   description String?
   createdAt   DateTime         @default(now())
-
   roles       RolePermission[]
 
   @@map("permissions")
@@ -123,11 +106,11 @@ model Permission {
 model RolePermission {
   roleId       String
   permissionId String
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
   isAllowed    Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
@@ -136,49 +119,40 @@ model RolePermission {
 model ActivityLog {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, dst
-  module      String   // barang, transaksi, user, dst
+  action      String
+  module      String
   description String?
-  metadata    Json?    // data tambahan (payload lama/baru)
+  metadata    Json?
   ipAddress   String?
   createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 
   @@map("activity_logs")
 }
 
-// ============================================================
-// CMS SETTINGS
-// ============================================================
-
 model WebSetting {
-  id          String    @id @default(cuid())
-  webNama     String
-  webLogo     String?
+  id           String    @id @default(cuid())
+  webNama      String
+  webLogo      String?
   webDeskripsi String?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  userId       String
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id])
 
   @@map("web_settings")
 }
 
-// ============================================================
-// MASTER DATA INVENTARIS
-// ============================================================
-
 model BarangCategory {
   id        String    @id @default(cuid())
-  name      String    @unique   // habis-pakai, berulang-pakai
+  name      String    @unique
   slug      String    @unique
   userId    String
-  user      User      @relation(fields: [userId], references: [id])
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
+  user      User      @relation(fields: [userId], references: [id])
   barangs   Barang[]
 
   @@map("barang_categories")
@@ -190,180 +164,162 @@ model JenisBarang {
   slug        String    @unique
   description String?
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
   deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
   barangs     Barang[]
+  user        User      @relation(fields: [userId], references: [id])
 
   @@map("jenis_barangs")
 }
 
 model Satuan {
   id          String    @id @default(cuid())
-  name        String    @unique   // Pcs, Box, Liter, Kg, Roll
+  name        String    @unique
   slug        String    @unique
   description String?
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
   deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
   barangs     Barang[]
+  user        User      @relation(fields: [userId], references: [id])
 
   @@map("satuans")
 }
 
 model Gudang {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  slug        String        @unique
-  description String?
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  deletedAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  barangGudangs     BarangGudang[]
+  id                 String              @id @default(cuid())
+  name               String              @unique
+  slug               String              @unique
+  description        String?
+  userId             String
+  deletedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  barangGudangs      BarangGudang[]
+  user               User                @relation(fields: [userId], references: [id])
   transactionDetails TransactionDetail[]
 
   @@map("gudangs")
 }
 
-// ============================================================
-// BARANG (MASTER ITEM)
-// ============================================================
-
 model Barang {
-  id               String         @id @default(cuid())
-  barangKode       String         @unique   // BRG-0001
-  barangNama       String         @unique
-  barangSlug       String         @unique
-  barangHarga      Decimal        @db.Decimal(15, 2)
-  barangGambar     String?
-  stokMinimum      Int            @default(0)
-  jenisBarangId    String
-  jenisBarang      JenisBarang    @relation(fields: [jenisBarangId], references: [id])
-  satuanId         String
-  satuan           Satuan         @relation(fields: [satuanId], references: [id])
-  barangCategoryId String
-  barangCategory   BarangCategory @relation(fields: [barangCategoryId], references: [id])
-  userId           String
-  user             User           @relation(fields: [userId], references: [id])
-  isActive         Boolean        @default(true)
-  deletedAt        DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-
+  id                 String              @id @default(cuid())
+  barangKode         String              @unique
+  barangNama         String              @unique
+  barangSlug         String              @unique
+  barangHarga        Decimal             @db.Decimal(15, 2)
+  barangGambar       String?
+  stokMinimum        Int                 @default(0)
+  jenisBarangId      String
+  satuanId           String
+  barangCategoryId   String
+  userId             String
+  deletedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  isActive           Boolean             @default(true)
   barangGudangs      BarangGudang[]
+  barangCategory     BarangCategory      @relation(fields: [barangCategoryId], references: [id])
+  jenisBarang        JenisBarang         @relation(fields: [jenisBarangId], references: [id])
+  satuan             Satuan              @relation(fields: [satuanId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
   transactionDetails TransactionDetail[]
 
   @@map("barangs")
 }
 
-// ============================================================
-// STOK PER GUDANG (PIVOT)
-// ============================================================
-
 model BarangGudang {
-  barangId         String
-  gudangId         String
-  barang           Barang   @relation(fields: [barangId], references: [id])
-  gudang           Gudang   @relation(fields: [gudangId], references: [id])
-  stokTersedia     Int      @default(0)
-  stokDipinjam     Int      @default(0)
-  stokMaintenance  Int      @default(0)
-  deletedAt        DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  barangId        String
+  gudangId        String
+  stokTersedia    Int       @default(0)
+  stokDipinjam    Int       @default(0)
+  stokMaintenance Int       @default(0)
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  barang          Barang    @relation(fields: [barangId], references: [id])
+  gudang          Gudang    @relation(fields: [gudangId], references: [id])
 
   @@id([barangId, gudangId])
   @@map("barang_gudangs")
 }
 
-// ============================================================
-// TRANSAKSI
-// ============================================================
-
 model TransactionType {
   id           String        @id @default(cuid())
   name         String        @unique
-  // BARANG_MASUK | BARANG_KELUAR | PEMINJAMAN |
-  // PENGEMBALIAN | MAINTENANCE | SELESAI_MAINTENANCE
   slug         String        @unique
   description  String?
   deletedAt    DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
   transactions Transaction[]
 
   @@map("transaction_types")
 }
 
 model Transaction {
-  id                String          @id @default(cuid())
-  transactionCode   String          @unique   // TRX-IN-20260416-0001
+  id                String              @id @default(cuid())
+  transactionCode   String              @unique
   transactionDate   DateTime
   description       String?
-  status            TransactionStatus @default(ACTIVE)
+  status            TransactionStatus   @default(ACTIVE)
   userId            String
-  user              User            @relation(fields: [userId], references: [id])
   transactionTypeId String
-  transactionType   TransactionType @relation(fields: [transactionTypeId], references: [id])
   deletedAt         DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
   details           TransactionDetail[]
+  transactionType   TransactionType     @relation(fields: [transactionTypeId], references: [id])
+  user              User                @relation(fields: [userId], references: [id])
 
   @@map("transactions")
+}
+
+model TransactionDetail {
+  id             String      @id @default(cuid())
+  transactionId  String
+  barangId       String
+  gudangId       String
+  quantity       Int
+  tanggalKembali DateTime?
+  kondisiKembali String?
+  catatan        String?
+  deletedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  barang         Barang      @relation(fields: [barangId], references: [id])
+  gudang         Gudang      @relation(fields: [gudangId], references: [id])
+  transaction    Transaction @relation(fields: [transactionId], references: [id])
+
+  @@map("transaction_details")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  TWO_FACTOR
+  SENSITIVE_ACTION
 }
 
 enum TransactionStatus {
   ACTIVE
   COMPLETED
   CANCELLED
-}
-
-model TransactionDetail {
-  id            String       @id @default(cuid())
-  transactionId String
-  transaction   Transaction  @relation(fields: [transactionId], references: [id])
-  barangId      String
-  barang        Barang       @relation(fields: [barangId], references: [id])
-  gudangId      String
-  gudang        Gudang       @relation(fields: [gudangId], references: [id])
-  quantity      Int
-  tanggalKembali DateTime?   // untuk tipe PEMINJAMAN
-  kondisiKembali String?     // baik / rusak — untuk PENGEMBALIAN
-  catatan       String?
-  deletedAt     DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  @@map("transaction_details")
-}
-
-// ============================================================
-// NOTIFIKASI
-// ============================================================
-
-model Notification {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  type      NotificationType
-  title     String
-  message   String
-  data      Json?     // metadata tambahan
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  @@map("notifications")
 }
 
 enum NotificationType {

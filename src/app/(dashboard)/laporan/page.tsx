@@ -1,78 +1,175 @@
-﻿"use client";
+"use client";
 
-import PageHeader from "@/components/layout/PageHeader";
-import { useEffect, useState } from "react";
-import { Download, BarChart2, Package, TrendingUp, TrendingDown, RefreshCcw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileText, Download, Table, FileSpreadsheet, RefreshCcw, Search, Filter, Printer } from "lucide-react";
+import HeaderTitle from "@/components/layout/HeaderTitle";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 export default function LaporanPage() {
-  const [summary, setSummary] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("stok"); // stok, transaksi, user
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // For now, let's just fetch all barang for stock report
+      const res = await fetch("/api/master/barang?all=true");
+      const resData = await res.json();
+      if (resData.success) {
+        setData(resData.data);
+      }
+    } catch (error) {
+       toast.error("Gagal mengambil data laporan");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/laporan/summary")
-      .then(res => res.json())
-      .then(data => { if (!data.error) setSummary(data); setIsLoading(false); });
+    fetchData();
   }, []);
 
-  const handleExport = () => { window.location.href = "/api/laporan/export"; };
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Laporan Stok Inventaris", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale })}`, 14, 22);
 
-  const statCards = [
-    { label: "Total Model Barang", value: summary?.totalBarangModel || 0, icon: Package },
-    { label: "Total Item Stok (Pcs)", value: summary?.totalStokKeseluruhan?.toLocaleString() || 0, icon: BarChart2 },
-    { label: "Stok Masuk (Bulan Ini)", value: summary?.pergerakanBulanIni?.masuk?.toLocaleString() || 0, icon: TrendingUp, accent: "emerald" },
-    { label: "Stok Keluar (Bulan Ini)", value: summary?.pergerakanBulanIni?.keluar?.toLocaleString() || 0, icon: TrendingDown, accent: "red" },
-  ];
+    const tableData = data.map((item, index) => [
+      index + 1,
+      item.barangKode,
+      item.barangNama,
+      item.barangCategory.name,
+      item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0),
+      item.satuan.name,
+    ]);
+
+    autoTable(doc, {
+      head: [["No", "Kode", "Nama Barang", "Kategori", "Total Stok", "Satuan"]],
+      body: tableData,
+      startY: 30,
+      theme: "striped",
+      headStyles: { fillColor: [15, 23, 42] },
+    });
+
+    doc.save(`Laporan_Stok_${format(new Date(), "yyyyMMdd")}.pdf`);
+    toast.success("PDF berhasil diunduh");
+  };
+
+  const exportExcel = () => {
+    const worksheetData = data.map((item) => ({
+      "Kode Barang": item.barangKode,
+      "Nama Barang": item.barangNama,
+      "Kategori": item.barangCategory.name,
+      "Jenis": item.jenisBarang.name,
+      "Total Stok": item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0),
+      "Satuan": item.satuan.name,
+      "Harga (Rp)": item.barangHarga,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Stok Barang");
+    XLSX.writeFile(workbook, `Laporan_Stok_${format(new Date(), "yyyyMMdd")}.xlsx`);
+    toast.success("Excel berhasil diunduh");
+  };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader
-        category="ADMINISTRASI"
-        title="Pusat Analitik & Laporan"
-        subtitle="Ringkasan inventaris dan performa stok barang secara real-time."
-        actionLabel="EXPORT (.CSV)"
-        onAction={handleExport}
-      />
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <HeaderTitle title="Pusat Laporan & Ekspor" />
 
-      {isLoading ? (
-        <div className="flex items-center justify-center p-20 text-muted-foreground">
-          <RefreshCcw className="w-8 h-8 animate-spin" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Sistem / Report</p>
+          <h1 className="text-xl font-bold text-foreground">Manajemen Laporan</h1>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statCards.map(({ label, value, icon: Icon, accent }) => (
-              <div key={label} className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="p-5">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-4 ${
-                    accent === "emerald" ? "bg-emerald-500/10 text-emerald-600" :
-                    accent === "red" ? "bg-destructive/10 text-destructive" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-1">{label}</p>
-                  <p className="text-2xl font-bold text-foreground">{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+           <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg text-xs font-bold hover:bg-rose-600 transition-all shadow-sm">
+             <FileText className="w-3.5 h-3.5" /> Export PDF
+           </button>
+           <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm">
+             <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+           </button>
+           <button onClick={() => window.print()} className="p-2 border border-border bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+             <Printer className="w-4 h-4" />
+           </button>
+        </div>
+      </div>
 
-          {/* Total Nilai */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            <div className="relative p-8">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Evaluasi Aset Tersimpan</p>
-              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-                Rp {summary?.totalNilaiInventaris?.toLocaleString("id-ID") || "0"}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
-                Angka di atas dihitung berdasarkan harga beli/standar dari setiap Unit Master yang memiliki stok di gudang. Total dihitung secara <em>real-time</em>.
-              </p>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+         <div className="bg-card border border-border rounded-xl p-1 flex items-center md:col-span-1">
+            <button 
+              onClick={() => setFilter("stok")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter === 'stok' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
+            >
+              <Box className="w-3.5 h-3.5" /> Stok
+            </button>
+         </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Pratinjau Data Laporan</h2>
+          <button onClick={fetchData} className="text-muted-foreground hover:text-primary transition-colors">
+            <RefreshCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-      )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-muted/30 border-b border-border">
+                <th className="pl-6 pr-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em]">No</th>
+                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em]">Info Barang</th>
+                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em]">Kategori & Jenis</th>
+                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] text-center">Total Stok</th>
+                <th className="px-4 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.2em] pr-6">Nilai Aset</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}><td colSpan={5} className="p-8 text-center text-xs text-muted-foreground opacity-50">Menyiapkan data...</td></tr>
+                ))
+              ) : data.length > 0 ? (
+                data.map((item, idx) => {
+                  const totalStok = item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0);
+                  return (
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="pl-6 pr-4 py-4 text-xs font-medium text-muted-foreground">{idx + 1}</td>
+                      <td className="px-4 py-4">
+                        <p className="font-bold text-foreground text-sm">{item.barangNama}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">{item.barangKode}</p>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="text-[10px] font-bold text-primary uppercase block">{item.barangCategory.name}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-medium">{item.jenisBarang.name}</span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${totalStok <= item.stokMinimum ? 'text-rose-500 bg-rose-500/10' : 'text-emerald-500 bg-emerald-500/10'}`}>
+                          {totalStok} {item.satuan.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 pr-6 text-sm font-bold text-foreground">
+                        Rp { (totalStok * item.barangHarga).toLocaleString() }
+                      </td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr><td colSpan={5} className="p-20 text-center text-muted-foreground">Tidak ada data untuk ditampilkan.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
+
+import { Box } from "lucide-react";

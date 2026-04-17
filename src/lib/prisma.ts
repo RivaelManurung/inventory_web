@@ -16,4 +16,5 @@ export const prisma = (
   })
 ) as any
 
+// Trigger reload after schema update
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

@@ -62,9 +62,9 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
             onClick={() => setShowNotifications(!showNotifications)}
             className={`relative p-2 rounded-md transition-all ${showNotifications ? 'bg-accent text-primary' : 'hover:bg-accent text-muted-foreground'}`}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-5 h-5" />
             {notifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-destructive text-[10px] font-bold text-white flex items-center justify-center rounded-full border-2 border-card animate-pulse">
+              <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-[11px] font-bold text-white flex items-center justify-center rounded-full border-2 border-card animate-pulse">
                 {notifications.length}
               </span>
             )}
@@ -75,8 +75,8 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
               <div className="absolute right-0 mt-2 w-80 bg-card rounded-xl shadow-xl border border-border overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
                 <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Notifikasi Sistem</h3>
-                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{notifications.length} Baru</span>
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Notifikasi Sistem</h3>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{notifications.length} Baru</span>
                 </div>
                 <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                   {notifications.length > 0 ? (
@@ -87,9 +87,9 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
                             {note.title.includes('Habis') ? <AlertCircle className="w-3.5 h-3.5" /> : <Package className="w-3.5 h-3.5" />}
                           </div>
                           <div className="min-w-0 pr-6">
-                            <p className="text-xs font-bold text-foreground leading-tight">{note.title}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{note.message}</p>
-                            <p className="text-[9px] text-muted-foreground/50 mt-1.5 flex items-center gap-1">
+                            <p className="text-sm font-bold text-foreground leading-tight">{note.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{note.message}</p>
+                            <p className="text-[10px] text-muted-foreground/50 mt-1.5 flex items-center gap-1">
                               {format(new Date(note.createdAt), "HH:mm")} • Baru saja
                             </p>
                           </div>
@@ -110,9 +110,9 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
                     </div>
                   )}
                 </div>
-                {notifications.length > 0 && (
+                 {notifications.length > 0 && (
                   <div className="p-2 bg-muted/20 border-t border-border">
-                    <button className="w-full py-2 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-[0.1em]">
+                    <button className="w-full py-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-[0.1em]">
                       Lihat Semua Notifikasi
                     </button>
                   </div>
@@ -124,11 +124,11 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
         {/* User */}
         <div className="relative">
-          <button
+           <button
             onClick={() => setShowProfile(!showProfile)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-accent transition-colors cursor-pointer border border-transparent hover:border-border"
           >
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               {session?.user?.name ?? "—"}
             </span>
             <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -142,9 +142,9 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
               <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-in fade-in duration-150">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-xs text-muted-foreground">User Aktif</p>
-                  <p className="text-sm font-medium text-foreground truncate mt-0.5">{session?.user?.name}</p>
+                 <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm text-muted-foreground font-medium">User Aktif</p>
+                  <p className="text-base font-bold text-foreground truncate mt-0.5">{session?.user?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
                 </div>
                 <div className="p-1.5">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HeaderTitle from "@/components/layout/HeaderTitle";
 import ImageUpload from "@/components/forms/ImageUpload";
+import { toast } from "sonner";
 
 const inputCls = "w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
 const labelCls = "text-xs font-semibold text-muted-foreground uppercase tracking-wide";
@@ -14,22 +15,34 @@ export default function CreateUserPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<any[]>([]);
-  const [form, setForm] = useState({ name: "", username: "", email: "", phone: "", password: "", roleId: "", avatar: "" });
+  const [form, setForm] = useState({ name: "", username: "", email: "", phoneNumber: "", password: "", roleId: "", avatar: "" });
 
   useEffect(() => {
-    fetch("/api/users/roles").then(r => r.json()).then(d => { if (d.success) setRoles(d.data); });
+    fetch("/api/users/roles")
+      .then(r => r.json())
+      .then(d => { 
+        if (d.success) setRoles(d.data); 
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.username || !form.password || !form.roleId) { alert("Lengkapi semua field wajib!"); return; }
+    if (!form.name || !form.username || !form.password || !form.roleId) { 
+      toast.error("Mohon lengkapi semua field wajib!"); 
+      return; 
+    }
     setLoading(true);
+    const toastId = toast.loading("Sedang mendaftarkan user baru...");
     try {
       const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const data = await res.json();
-      if (data.success) { router.push("/users"); router.refresh(); }
-      else alert("Gagal: " + data.message);
-    } catch { alert("Terjadi kesalahan."); }
+      if (data.success) { 
+        toast.success("User berhasil didaftarkan!", { id: toastId });
+        router.push("/users"); 
+        router.refresh(); 
+      }
+      else toast.error(data.message || "Gagal mendaftarkan user", { id: toastId });
+    } catch { toast.error("Terjadi kesalahan koneksi.", { id: toastId }); }
     finally { setLoading(false); }
   };
 
@@ -76,7 +89,7 @@ export default function CreateUserPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className={labelCls}>No. Telepon</label>
-                    <input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                    <input type="text" value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })}
                       placeholder="0812..." className={inputCls} />
                   </div>
                 </div>

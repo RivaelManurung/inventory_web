@@ -55,7 +55,10 @@ export async function POST(req: Request) {
 
     const transaction = await (prisma as any).$transaction(async (tx: any) => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const codePrefix = typeSlug.includes('masuk') ? 'TRX-IN-' : 'TRX-OUT-';
+      let codePrefix = 'TRX-TRF-';
+      if (typeSlug.includes('masuk')) codePrefix = 'TRX-IN-';
+      else if (typeSlug.includes('keluar')) codePrefix = 'TRX-OUT-';
+      else if (typeSlug.includes('adjustment')) codePrefix = 'TRX-ADJ-';
       
       const count = await tx.transaction.count({
         where: { transactionCode: { startsWith: codePrefix + dateStr } }
@@ -85,33 +88,34 @@ export async function POST(req: Request) {
         });
 
         const isMasuk = typeSlug.includes('masuk');
+        const isAdjustment = typeSlug.includes('adjustment');
         let bg = await tx.barangGudang.findUnique({
           where: { barangId_gudangId: { barangId: item.barangId, gudangId: item.gudangId } }
         });
 
         // Update stock
         let updatedBG;
+        const qty = Number(item.quantity);
         if (!bg) {
-          if (!isMasuk) {
+          if (!isMasuk && !isAdjustment) {
             throw new Error('Stok tidak ditemukan untuk barang ID: ' + item.barangId);
           }
           updatedBG = await tx.barangGudang.create({
             data: { 
               barangId: item.barangId, 
               gudangId: item.gudangId, 
-              stokTersedia: Number(item.quantity) 
+              stokTersedia: qty 
             }
           });
         } else {
-          const qty = Number(item.quantity);
-          if (!isMasuk && bg.stokTersedia < qty) {
+          if (!isMasuk && !isAdjustment && bg.stokTersedia < qty) {
             throw new Error('Stok barang tidak mencukupi untuk dikeluarkan. Diminta: ' + qty + ', Tersedia: ' + bg.stokTersedia);
           }
 
           updatedBG = await tx.barangGudang.update({
             where: { barangId_gudangId: { barangId: item.barangId, gudangId: item.gudangId } },
             data: {
-              stokTersedia: isMasuk ? { increment: qty } : { decrement: qty }
+              stokTersedia: isAdjustment ? qty : (isMasuk ? { increment: qty } : { decrement: qty })
             }
           });
         }

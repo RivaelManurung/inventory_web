@@ -1,13 +1,13 @@
 "use client";
 
 import React from 'react';
-import { 
-  Calendar, 
-  Briefcase, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Calendar,
+  Briefcase,
+  DollarSign,
+  TrendingUp,
   UserCheck,
-  Activity 
+  Activity
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -38,7 +38,7 @@ export default function DashboardView() {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Dashboard Title */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dasbor</h1>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-sm font-bold text-slate-700">
             <Calendar size={14} className="text-slate-400" />
@@ -50,8 +50,8 @@ export default function DashboardView() {
       {/* Flat Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
           >
             <div className="flex items-start justify-between mb-4">
@@ -88,8 +88,8 @@ export default function DashboardView() {
             {performanceData.map((data, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-4 group/bar">
                 <div className="w-full relative h-full flex items-end">
-                  <div 
-                    className="w-full bg-slate-100 rounded-t-md relative transition-all duration-500 hover:bg-blue-100" 
+                  <div
+                    className="w-full bg-slate-100 rounded-t-md relative transition-all duration-500 hover:bg-blue-100"
                     style={{ height: `${data.value}%` }}
                   >
                     <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded-t-md opacity-0 group-hover/bar:opacity-100 transition-opacity" />
@@ -109,7 +109,7 @@ export default function DashboardView() {
             <h3 className="text-lg font-bold text-slate-900 tracking-tight">Kasus Prioritas</h3>
             <button className="text-[11px] font-bold text-blue-600 hover:underline">Lihat Semua</button>
           </div>
-          
+
           <div className="flex-1 space-y-4">
             {[
               { name: "Andi Saputra", amount: "Rp 450M", risk: "Kritis" },

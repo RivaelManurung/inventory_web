@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Search, Filter, Scale, Archive, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Filter, Scale, Archive, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -9,28 +9,43 @@ export const dynamic = "force-dynamic";
 export default async function SatuanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string, page?: string }>;
 }) {
-  const { q } = await searchParams;
-  const search = q || "";
+  const params = await searchParams;
+  const search = params.q || "";
+  const currentPage = Number(params.page) || 1;
+  const pageSize = 20;
 
-  const satuan = await prisma.satuan.findMany({
-    where: {
-      deletedAt: null,
-      OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { slug: { contains: search, mode: "insensitive" } },
-      ]
-    },
-    include: {
-      _count: {
-        select: { barangs: { where: { deletedAt: null } } }
+  const [satuanList, totalItems] = await Promise.all([
+    prisma.satuan.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { slug: { contains: search, mode: "insensitive" } },
+        ]
+      },
+      include: {
+        _count: {
+          select: { barangs: { where: { deletedAt: null } } }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.satuan.count({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { slug: { contains: search, mode: "insensitive" } },
+        ]
       }
-    },
-    orderBy: {
-      createdAt: "desc"
-    }
-  });
+    })
+  ]);
+
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 font-inter">
@@ -52,9 +67,9 @@ export default async function SatuanPage({
               className="h-8 w-64 pl-8 text-xs bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
             />
           </form>
-          {satuan.length > 0 && (
+          {totalItems > 0 && (
             <span className="text-xs text-muted-foreground px-1 font-medium">
-              {satuan.length} satuan terdaftar
+              {totalItems} satuan terdaftar
             </span>
           )}
         </div>
@@ -85,8 +100,8 @@ export default async function SatuanPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {satuan.length > 0 ? (
-                satuan.map((item) => (
+              {satuanList.length > 0 ? (
+                satuanList.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                     <td className="pl-6 pr-4 py-4">
                       <Link href={`/master/satuan/${item.id}`} className="group/link flex items-center gap-3">
@@ -126,6 +141,44 @@ export default async function SatuanPage({
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-[10px] text-muted-foreground">
+            Menampilkan <span className="font-semibold">{(currentPage - 1) * pageSize + 1}</span> sampai <span className="font-semibold">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold">{totalItems}</span> data
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href={`/master/satuan?q=${search}&page=${currentPage - 1}`}
+              className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </Link>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={`/master/satuan?q=${search}&page=${p}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-md text-[10px] font-bold transition-all ${
+                    currentPage === p 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-card border border-border text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p}
+                </Link>
+              ))}
+            </div>
+            <Link
+              href={`/master/satuan?q=${search}&page=${currentPage + 1}`}
+              className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

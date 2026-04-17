@@ -17,15 +17,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             richColors 
             closeButton 
             toastOptions={{
+              className: "border-none shadow-2xl",
               style: {
-                background: 'var(--card)', 
-                border: '1px solid var(--border)',
-                color: 'var(--foreground)',
-                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '600'
+                padding: "16px 20px",
+                borderRadius: "16px",
+                fontSize: "14px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
               },
             }}
           />

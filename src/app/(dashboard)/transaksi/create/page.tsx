@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, ScanLine, X, Search, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ScanLine, X, Search, ArrowLeft, Camera } from "lucide-react";
 import Link from "next/link";
 import HeaderTitle from "@/components/layout/HeaderTitle";
 import { toast } from "sonner";
+import BarcodeScanner from "@/components/scanner/BarcodeScanner";
+import { cn } from "@/lib/utils";
 
 export default function CreateTransaksiPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [form, setForm] = useState({
     type: "Barang Masuk",
@@ -21,6 +24,28 @@ export default function CreateTransaksiPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  const handleScanSuccess = async (code: string) => {
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/master/barang/search?q=${code}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        // Find exact code match first
+        const exactMatch = data.find((item: any) => item.barangKode === code);
+        const itemToSelect = exactMatch || data[0];
+        addDetail(itemToSelect);
+        toast.success(`Berhasil scan: ${itemToSelect.barangNama}`);
+      } else {
+        toast.error(`Barang dengan kode ${code} tidak ditemukan.`);
+      }
+    } catch (err) {
+      toast.error("Gagal mencari barang hasil scan.");
+    } finally {
+      setIsSearching(false);
+      setIsScannerOpen(false);
+    }
+  };
 
   const handleSearch = async (e: any) => {
     e.preventDefault();
@@ -40,16 +65,27 @@ export default function CreateTransaksiPage() {
   const addDetail = (barang: any) => {
     let gudangId = "";
     let gudangName = "Pilih Gudang...";
+    let maxQty: any = 0;
+
     if (barang.barangGudangs && barang.barangGudangs.length > 0) {
-      gudangId = barang.barangGudangs[0].gudang.id;
+      gudangId = barang.barangGudangs[0].gudangId;
       gudangName = barang.barangGudangs[0].gudang.name;
+      maxQty = barang.barangGudangs[0].stokTersedia;
     }
+
     setDetails([...details, {
       uid: Date.now().toString(),
-      barangId: barang.id, barangKode: barang.barangKode, barangNama: barang.barangNama,
-      gudangs: barang.barangGudangs || [], gudangId, gudangName, quantity: 1, maxQty: "∞",
+      barangId: barang.id, 
+      barangKode: barang.barangKode, 
+      barangNama: barang.barangNama,
+      gudangs: barang.barangGudangs || [], 
+      gudangId, 
+      gudangName, 
+      quantity: 1, 
+      maxQty,
     }]);
-    setSearchResults([]); setSearchQuery("");
+    setSearchResults([]); 
+    setSearchQuery("");
   };
 
   const removeDetail = (uid: string) => setDetails(details.filter((d) => d.uid !== uid));
@@ -137,13 +173,24 @@ export default function CreateTransaksiPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/30 flex flex-col items-center justify-center p-6 text-center">
-            <ScanLine className="w-12 h-12 text-muted-foreground/30 mb-3" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Gunakan scanner fisik ke input pencarian untuk scan otomatis
-            </p>
-          </div>
+          <button 
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="group relative rounded-xl border border-primary/20 bg-primary/5 flex flex-col items-center justify-center p-6 text-center hover:bg-primary/10 transition-all overflow-hidden"
+          >
+            <div className="absolute -right-4 -top-4 w-12 h-12 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/30 transition-all" />
+            <ScanLine className="w-12 h-12 text-primary mb-3 group-hover:scale-110 transition-transform duration-300" />
+            <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Scan dengan Kamera</p>
+            <p className="text-[10px] text-muted-foreground mt-1 max-w-[120px]">Buka kamera untuk scan barcode otomatis</p>
+          </button>
         </div>
+
+        {/* Barcode Scanner Modal */}
+        <BarcodeScanner 
+          isOpen={isScannerOpen}
+          onClose={() => setIsScannerOpen(false)}
+          onScan={handleScanSuccess}
+        />
 
         {/* Item Section */}
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -222,7 +269,16 @@ export default function CreateTransaksiPage() {
                             </select>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center font-mono text-muted-foreground bg-muted/20">{d.maxQty}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={cn(
+                            "inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-mono transition-colors",
+                            d.maxQty > 0 
+                              ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
+                              : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                          )}>
+                            {d.maxQty}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           <input type="number" min="1" value={d.quantity} onChange={(e) => updateDetail(d.uid, "quantity", Number(e.target.value))}
                             className="w-full px-3 py-1.5 border border-border rounded-md text-center font-medium text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />

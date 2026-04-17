@@ -16,6 +16,7 @@ export default function CreateKategoriPage() {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
+    const toastId = toast.loading("Sedang menyimpan kategori...");
     try {
       const res = await fetch("/api/master/kategori", {
         method: "POST",
@@ -24,14 +25,14 @@ export default function CreateKategoriPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Kategori berhasil ditambahkan!");
+        toast.success("Kategori berhasil ditambahkan!", { id: toastId });
         router.push("/master/kategori");
         router.refresh();
       } else {
-        toast.error("Gagal: " + data.message);
+        toast.error(data.message || "Gagal menyimpan data", { id: toastId });
       }
     } catch {
-      toast.error("Terjadi kesalahan koneksi.");
+      toast.error("Terjadi kesalahan koneksi.", { id: toastId });
     } finally {
       setLoading(false);
     }
