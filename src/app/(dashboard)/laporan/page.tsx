@@ -21,7 +21,7 @@ export default function LaporanPage() {
     totalStock: 0,
     totalValue: 0
   });
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0, limit: 20 });
 
   const fetchData = async (page = 1) => {
     setLoading(true);
