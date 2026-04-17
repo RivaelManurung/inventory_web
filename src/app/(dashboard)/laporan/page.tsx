@@ -10,7 +10,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-import { Box, PieChart as PieIcon, TrendingUp, DollarSign } from "lucide-react";
+import { Box, PieChart as PieIcon, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function LaporanPage() {
   const [data, setData] = useState<any[]>([]);
@@ -21,27 +21,32 @@ export default function LaporanPage() {
     totalStock: 0,
     totalValue: 0
   });
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/master/barang?all=true");
+      const res = await fetch(`/api/master/barang?page=${page}&limit=20`);
       const resData = await res.json();
       if (resData.success) {
         setData(resData.data);
+        setPagination(resData.pagination);
         
-        // Calculate Stats
-        let totalItems = resData.data.length;
-        let totalStock = 0;
-        let totalValue = 0;
-
-        resData.data.forEach((item: any) => {
-          const itemStok = item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0);
-          totalStock += itemStok;
-          totalValue += (itemStok * item.barangHarga);
-        });
-
-        setStats({ totalItems, totalStock, totalValue });
+        // Calculate Stats (only on first load)
+        if (page === 1) {
+          const allRes = await fetch("/api/master/barang?all=true");
+          const allData = await allRes.json();
+          if (allData.success) {
+            let totalStock = 0;
+            let totalValue = 0;
+            allData.data.forEach((item: any) => {
+              const itemStok = item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0);
+              totalStock += itemStok;
+              totalValue += (itemStok * item.barangHarga);
+            });
+            setStats({ totalItems: allData.pagination.total, totalStock, totalValue });
+          }
+        }
       }
     } catch (error) {
        toast.error("Gagal mengambil data laporan");
@@ -51,7 +56,7 @@ export default function LaporanPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(1);
   }, []);
 
   const exportPDF = () => {
@@ -191,7 +196,9 @@ export default function LaporanPage() {
                   const totalStok = item.barangGudangs.reduce((acc: number, curr: any) => acc + curr.stokTersedia, 0);
                   return (
                     <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="pl-6 pr-4 py-4 text-xs font-medium text-muted-foreground">{idx + 1}</td>
+                      <td className="pl-6 pr-4 py-4 text-xs font-medium text-muted-foreground">
+                        {(pagination.page - 1) * pagination.limit + idx + 1}
+                      </td>
                       <td className="px-4 py-4">
                         <p className="font-bold text-foreground text-sm">{item.barangNama}</p>
                         <p className="text-[10px] text-muted-foreground font-mono">{item.barangKode}</p>
@@ -218,6 +225,34 @@ export default function LaporanPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 bg-card rounded-xl border border-border shadow-sm">
+          <p className="text-xs text-muted-foreground font-medium">
+            Menampilkan <span className="text-foreground font-bold">{(pagination.page - 1) * pagination.limit + 1}</span> - <span className="text-foreground font-bold">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> dari <span className="text-foreground font-bold">{pagination.total}</span> data
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => fetchData(pagination.page - 1)}
+              disabled={pagination.page === 1 || loading}
+              className="p-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center px-4 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-widest">
+              Halaman {pagination.page} / {pagination.totalPages}
+            </div>
+            <button
+              onClick={() => fetchData(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages || loading}
+              className="p-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

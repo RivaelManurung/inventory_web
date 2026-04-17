@@ -8,26 +8,45 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "100");
+    const all = searchParams.get("all") === "true";
+    const skip = (page - 1) * limit;
 
-    const data = await prisma.barang.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
-          { barangKode: { contains: search, mode: "insensitive" } },
-          { barangNama: { contains: search, mode: "insensitive" } },
-        ],
-      },
-      include: {
-        barangCategory: true,
-        jenisBarang: true,
-        satuan: true,
-        barangGudangs: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100 // limit for now
+    const where = {
+      deletedAt: null,
+      OR: [
+        { barangKode: { contains: search, mode: "insensitive" } },
+        { barangNama: { contains: search, mode: "insensitive" } },
+      ],
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.barang.findMany({
+        where,
+        include: {
+          barangCategory: true,
+          jenisBarang: true,
+          satuan: true,
+          barangGudangs: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: all ? undefined : skip,
+        take: all ? undefined : limit,
+      }),
+      prisma.barang.count({ where })
+    ]);
+
+    return NextResponse.json({ 
+      success: true, 
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
     });
-
-    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     return handlePrismaError(error, "GET BARANG");
   }
