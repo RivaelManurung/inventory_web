@@ -171,7 +171,7 @@ export default function LaporanPage() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Pratinjau Data Laporan</h2>
-          <button onClick={fetchData} className="text-muted-foreground hover:text-primary transition-colors">
+          <button onClick={() => fetchData(1)} className="text-muted-foreground hover:text-primary transition-colors">
             <RefreshCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
