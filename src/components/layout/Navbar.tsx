@@ -148,12 +148,20 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
                   <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
                 </div>
                 <div className="p-1.5">
-                  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left">
+                  <Link 
+                    href="/profile" 
+                    onClick={() => setShowProfile(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left"
+                  >
                     <User className="w-3.5 h-3.5 text-muted-foreground" /> Profil
-                  </button>
-                  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left">
+                  </Link>
+                  <Link 
+                    href="/settings"
+                    onClick={() => setShowProfile(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors text-left"
+                  >
                     <Settings className="w-3.5 h-3.5 text-muted-foreground" /> Pengaturan
-                  </button>
+                  </Link>
                 </div>
                 <div className="p-1.5 border-t border-border">
                   <button

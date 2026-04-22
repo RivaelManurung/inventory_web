@@ -2,29 +2,73 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where: { deletedAt: null },
-      include: {
-        transactionType: true,
-        user: { select: { name: true } },
-        details: {
-          include: {
-            barang: { select: { barangKode: true, barangNama: true } },
-            gudang: { select: { name: true } }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get('q') || '';
+    const type = searchParams.get('type') || '';
+    const startDate = searchParams.get('startDate') || '';
+    const endDate = searchParams.get('endDate') || '';
+    const page = Number(searchParams.get('page')) || 1;
+    const limit = Number(searchParams.get('limit')) || 20;
 
-    return NextResponse.json(transactions);
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
+
+    const whereClause = {
+      deletedAt: null,
+      AND: [
+        {
+          OR: [
+            { transactionCode: { contains: q, mode: "insensitive" } },
+            { user: { name: { contains: q, mode: "insensitive" } } },
+            { transactionType: { name: { contains: q, mode: "insensitive" } } },
+          ],
+        },
+        type ? { transactionTypeId: type } : {},
+        Object.keys(dateFilter).length > 0 ? { transactionDate: dateFilter } : {},
+      ],
+    };
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where: whereClause as any,
+        include: {
+          transactionType: true,
+          user: { select: { name: true } },
+          details: {
+            include: {
+              barang: { select: { barangKode: true, barangNama: true } },
+              gudang: { select: { name: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.transaction.count({ where: whereClause as any })
+    ]);
+
+    return NextResponse.json({
+      data: transactions,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

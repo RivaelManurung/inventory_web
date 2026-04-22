@@ -74,16 +74,7 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setIsS
           </div>
         </div>
 
-        <div className="px-5 mb-6 mt-2">
-          <div className="bg-[#2d3748]/40 p-4 rounded-xl flex items-center justify-between cursor-pointer border border-white/5 transition-all group">
-            <div className="overflow-hidden">
-              <p className="text-[9px] uppercase text-slate-500 font-bold mb-1 tracking-widest">KANTOR PUSAT</p>
-              <p className="text-sm text-slate-300 font-semibold truncate group-hover:text-white transition-colors">Semua cabang</p>
-            </div>
-            <ChevronDown size={16} className="text-slate-500" />
-          </div>
-        </div>
-
+        
         <nav className="flex-1 overflow-y-auto px-2 custom-scrollbar space-y-6 pb-8">
           {menuItems.map((group, idx) => (
             <div key={idx}>

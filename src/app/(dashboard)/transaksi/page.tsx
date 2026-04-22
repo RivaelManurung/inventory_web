@@ -10,13 +10,23 @@ export const dynamic = "force-dynamic";
 export default async function TransaksiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; type?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; startDate?: string; endDate?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const search = params.q || "";
   const type = params.type || "";
+  const startDate = params.startDate || "";
+  const endDate = params.endDate || "";
   const currentPage = Number(params.page) || 1;
   const pageSize = 20;
+
+  const dateFilter: any = {};
+  if (startDate) dateFilter.gte = new Date(startDate);
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter.lte = end;
+  }
 
   const whereClause = {
     deletedAt: null,
@@ -28,11 +38,12 @@ export default async function TransaksiPage({
           { transactionType: { name: { contains: search, mode: "insensitive" } } },
         ],
       },
-      type ? { transactionType: { slug: { contains: type, mode: "insensitive" } } } : {},
+      type ? { transactionTypeId: type } : {},
+      Object.keys(dateFilter).length > 0 ? { transactionDate: dateFilter } : {},
     ],
   };
 
-  const [data, totalItems] = await Promise.all([
+  const [data, totalItems, transactionTypes] = await Promise.all([
     prisma.transaction.findMany({
       where: whereClause as any,
       include: {
@@ -47,7 +58,8 @@ export default async function TransaksiPage({
     }),
     prisma.transaction.count({
       where: whereClause as any,
-    })
+    }),
+    prisma.transactionType.findMany()
   ]);
 
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -60,9 +72,9 @@ export default async function TransaksiPage({
       />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-2 items-center">
-          <form className="relative" action="/transaksi" method="GET">
+      <div className="flex flex-col gap-4">
+        <form className="flex flex-wrap items-center gap-3" action="/transaksi" method="GET">
+          <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               name="q"
@@ -71,21 +83,48 @@ export default async function TransaksiPage({
               placeholder="Cari transaksi atau petugas..."
               className="h-9 w-64 pl-9 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
             />
-          </form>
-          {totalItems > 0 && (
-            <span className="text-xs text-muted-foreground px-1 font-medium">
-              {totalItems} transaksi
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="h-9 px-3 bg-card border border-border text-foreground rounded-md text-sm font-medium hover:bg-accent transition-all flex items-center gap-1.5 flex-none">
+          </div>
+          
+          <select 
+            name="type" 
+            defaultValue={type}
+            className="h-9 px-3 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          >
+            <option value="">Semua Jenis Transaksi</option>
+            {transactionTypes.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-2">
+            <input 
+              type="date" 
+              name="startDate" 
+              defaultValue={startDate}
+              className="h-9 px-3 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+            <span className="text-muted-foreground text-sm">-</span>
+            <input 
+              type="date" 
+              name="endDate" 
+              defaultValue={endDate}
+              className="h-9 px-3 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+          </div>
+
+          <button type="submit" className="h-9 px-3 bg-card border border-border text-foreground rounded-md text-sm font-medium hover:bg-accent transition-all flex items-center gap-1.5">
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <Link href="/transaksi/create" className="h-9 px-4 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm flex-none">
+
+          <Link href="/transaksi/create" className="ml-auto h-9 px-4 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm">
             <Plus className="w-4 h-4" /> Buat Transaksi
           </Link>
-        </div>
+        </form>
+        {totalItems > 0 && (
+          <div className="text-xs text-muted-foreground font-medium">
+            Ditemukan {totalItems} transaksi
+          </div>
+        )}
       </div>
 
       {/* Table Container */}
@@ -163,7 +202,7 @@ export default async function TransaksiPage({
           </p>
           <div className="flex gap-2">
             <Link
-              href={`/transaksi?q=${search}&type=${type}&page=${currentPage - 1}`}
+              href={`/transaksi?q=${search}&type=${type}&startDate=${startDate}&endDate=${endDate}&page=${currentPage - 1}`}
               className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -172,7 +211,7 @@ export default async function TransaksiPage({
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <Link
                   key={p}
-                  href={`/transaksi?q=${search}&type=${type}&page=${p}`}
+                  href={`/transaksi?q=${search}&type=${type}&startDate=${startDate}&endDate=${endDate}&page=${p}`}
                   className={`w-9 h-9 flex items-center justify-center rounded-md text-xs font-bold transition-all ${
                     currentPage === p 
                       ? "bg-primary text-primary-foreground shadow-sm" 
@@ -184,7 +223,7 @@ export default async function TransaksiPage({
               ))}
             </div>
             <Link
-              href={`/transaksi?q=${search}&type=${type}&page=${currentPage + 1}`}
+              href={`/transaksi?q=${search}&type=${type}&startDate=${startDate}&endDate=${endDate}&page=${currentPage + 1}`}
               className={`p-2 rounded-md border border-border bg-card transition-colors hover:bg-muted ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}`}
             >
               <ChevronRight className="w-4 h-4" />

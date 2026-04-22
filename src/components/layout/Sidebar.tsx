@@ -115,16 +115,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Branch context */}
-      <div className="mx-3 mt-3 px-3 py-2 rounded-md bg-sidebar-accent/40 border border-sidebar-border">
-        <p className="text-xs text-sidebar-foreground/40 uppercase tracking-wide font-medium">
-          Kantor Pusat
-        </p>
-        <p className="text-sm text-sidebar-foreground mt-0.5 truncate">
-          {session?.user?.name ?? "—"}
-        </p>
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 custom-scrollbar">
         {filteredMenuItems.map((group) => (

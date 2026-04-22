@@ -125,7 +125,7 @@ export default function SettingsPage() {
             <div className="p-6 space-y-5">
               <div>
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Versi Aplikasi</p>
-                <p className="text-sm font-bold text-foreground font-mono">Dots Inventory v1.2.0-F</p>
+                <p className="text-sm font-bold text-foreground font-mono">Inventory v1.2.0-F</p>
               </div>
               <div>
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Environment</p>
